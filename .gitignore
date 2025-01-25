@@ -1,0 +1,8 @@
+**/__pycache__/*
+**/.env
+**/.ruff_cache
+**/.mypy_cache
+**/.venv
+**/.vscode
+**/logs/*
+**/pg_data

@@ -1,0 +1,15 @@
+[project]
+name = "document-parsing"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14.1",
+    "fastapi>=0.115.6",
+    "pydantic>=2.10.5",
+    "pydantic-settings>=2.7.1",
+    "sqlmodel>=0.0.22",
+    "typer>=0.15.1",
+    "uvicorn>=0.34.0",
+]
