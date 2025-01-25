@@ -15,4 +15,5 @@ dependencies = [
     "uvicorn>=0.34.0",
     "minio>=7.2.15",
     "doctr>=1.9.0",
+    "greenlet>=3.1.1",
 ]
