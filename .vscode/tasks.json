@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Setup Environment",
+        "type": "shell",
+        "command": "docker compose up -d && python -m dp db",
+        "problemMatcher": []
+      },
+      {
+        "label": "Teardown Environment",
+        "type": "shell",
+        "command": "docker compose down",
+        "problemMatcher": []
+      }
+    ]
+  }

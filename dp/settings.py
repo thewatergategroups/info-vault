@@ -2,28 +2,24 @@
 Application Settings
 """
 
+import pathlib
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+from .database.config import DbSettings
 
 
 class Settings(BaseSettings):
     """Application Settings"""
 
     log_level: str = "INFO"
-    LOG_LEVEL: str = "INFO"
-
-    DATABASE_URL: str = "postgresql://user:pass@localhost/docmanager"
-
-    MINIO_ENDPOINT: str = "localhost:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_BUCKET: str = "document-storage"
-    model_config = SettingsConfigDict(env_file=".env")
-
-    # JWT_SECRET_KEY: str
-    # JWT_ALGORITHM: str = "HS256"
-    # ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "document-storage"
+    db_settings: DbSettings = DbSettings(
+        env_script_location=f"{pathlib.Path(__file__).parent.resolve()}/database/alembic"
+    )
 
 
 @lru_cache

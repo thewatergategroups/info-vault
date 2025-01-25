@@ -5,6 +5,13 @@ Helper classes
 from enum import StrEnum
 
 
+class DbActions(StrEnum):
+    """Database actions"""
+
+    UPGRADE = "upgrade"
+    DOWNGRADE = "downgrade"
+
+
 class DocType(StrEnum):
     """Document type"""
 

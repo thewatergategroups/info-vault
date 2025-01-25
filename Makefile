@@ -5,7 +5,7 @@ build:
 	docker build --network=host \
 	-f ./Dockerfile \
 	--target production \
-	-t ghcr.io/1ndistinct/$(REPOSITORY):latest \
+	-t ghcr.io/thewatergategroups/$(REPOSITORY):latest \
 	. 
 
 up: 
@@ -16,16 +16,12 @@ debug:
 	docker compose run -it $(REPOSITORY) bash
 
 down: 
-	docker compose --profile "*" down
+	docker compose down
 
 push: build
-	docker push ghcr.io/1ndistinct/$(REPOSITORY):latest
+	docker push ghcr.io/thewatergategroups/$(REPOSITORY):latest
 
-test: 
-	docker run --rm -p 5431:5432 --name test-db --env POSTGRES_USER=postgres --env POSTGRES_DB=postgres --env POSTGRES_PASSWORD=postgres -d postgres:16
-	sleep 0.5
-	pytest -vv  tests || :
-	docker kill test-db
-
-migrate:
-	docker compose run --entrypoint "python -m alembic -c $(REPOSITORY)/database/alembic.ini revision --autogenerate -m '$(m)'" $(REPOSITORY)
+migrate: 
+	docker compose up -d --remove-orphans
+	python -m alembic revision --autogenerate -m $(m)
+	docker compose down
