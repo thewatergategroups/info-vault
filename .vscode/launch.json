@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Run Module with .env",
+        "type": "debugpy",
+        "request": "launch",
+        "module": "dp", // Replace with your module name
+        "envFile": "${workspaceFolder}/.env",
+        "console": "integratedTerminal",
+        "args": ["api"],
+        "preLaunchTask": "Setup Environment",
+        "postDebugTask": "Teardown Environment"
+      }
+    ]
+  }

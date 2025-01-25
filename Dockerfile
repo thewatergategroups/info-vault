@@ -15,6 +15,7 @@ WORKDIR /app
 ENV PATH="/app/.venv/bin:$PATH"
 COPY  ./scripts/start.sh ./
 COPY ./dp ./dp
+RUN apt update && apt install libpq-dev
 RUN chown -R app /app && chmod -R 700 /app
 USER app
 ENTRYPOINT ["bash","start.sh"]

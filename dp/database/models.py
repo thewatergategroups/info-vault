@@ -2,7 +2,7 @@
 Postgres Database table definitions
 """
 
-import datetime
+from datetime import datetime
 from uuid import UUID
 from sqlmodel import Field, SQLModel
 from ..utils import DocType
