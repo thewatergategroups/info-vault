@@ -11,11 +11,11 @@ RUN uv sync --frozen
 
 FROM python:3.12-slim-bookworm AS base
 RUN groupadd app && useradd -g app --home-dir /app --create-home app
-WORKDIR /app 
+WORKDIR /app
 ENV PATH="/app/.venv/bin:$PATH"
 COPY  ./scripts/start.sh ./
 COPY ./dp ./dp
-RUN apt update && apt install libpq-dev
+RUN apt update && apt install libpq-dev -yy
 RUN chown -R app /app && chmod -R 700 /app
 USER app
 ENTRYPOINT ["bash","start.sh"]
