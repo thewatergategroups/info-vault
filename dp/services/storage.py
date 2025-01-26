@@ -1,9 +1,11 @@
-from minio import Minio
-from minio.error import S3Error
 import uuid
 from typing import BinaryIO
+
+from minio.error import S3Error
+
 from dp.services.logger import logger
-from dp.settings import get_settings, Settings
+from dp.settings import Settings, get_settings
+from minio import Minio
 
 settigs = {} # ??
 

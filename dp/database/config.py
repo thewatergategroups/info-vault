@@ -10,14 +10,11 @@ from alembic import command, context
 from alembic.config import Config
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
-from sqlalchemy import MetaData, create_engine, engine_from_config, pool, text, Engine
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import (Engine, MetaData, create_engine, engine_from_config,
+                        pool, text)
+from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
+                                    async_sessionmaker, create_async_engine)
+from sqlalchemy.orm import Session, sessionmaker
 
 from .helpers import custom_json_encoder
 

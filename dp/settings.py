@@ -6,6 +6,7 @@ import pathlib
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
+
 from .database.config import DbSettings
 
 

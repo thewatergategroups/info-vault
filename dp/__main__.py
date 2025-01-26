@@ -4,9 +4,10 @@ Entrypoint to the application
 
 import typer
 import uvicorn
+
 from .database.config import run_downgrade, run_upgrade
+from .schemas import DbActions
 from .settings import get_settings
-from .utils import DbActions
 
 app = typer.Typer()
 

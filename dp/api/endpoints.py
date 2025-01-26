@@ -3,17 +3,59 @@ Open ID connect and oAuth Authenticated endpoints.
 Requires Admin credentials
 """
 
-from fastapi import APIRouter, File, UploadFile, Depends, HTTPException
-from sqlalchemy import delete, exists, select, update
-from sqlalchemy.dialects.postgresql import insert
+from typing import Any, Dict
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, File, UploadFile
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from dp.services.storage import MinIOStorageService
 
 from ..database.models import Document
 from ..utils import get_async_session
-from dp.services.storage import MinIOStorageService
-from typing import Dict, Any
+from .schemas import AddDocument, UpdateDocument
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("")
+async def get_documents(
+    stmt: Select = Depends(Document.get_documents_stmt),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get existing documents"""
+    return (await session.scalars(stmt)).all()
+
+
+@router.post("/document")
+async def add_document(
+    body: AddDocument,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """add new document"""
+    id_ = await session.scalar(Document.add_document_stmt(**body.model_dump()))
+    return {"id_": id_}
+
+
+@router.patch("/document")
+async def update_document(
+    body: UpdateDocument,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """add new document"""
+    await session.execute(Document.update_document_stmt(**body.model_dump()))
+    return {"detail": "success"}
+
+
+@router.delete("/document")
+async def delete_document(
+    id_: UUID,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """add new document"""
+    await session.execute(Document.delete_document_stmt(id_))
+    return {"detail": "success"}
 
 
 @router.post("/upload")
@@ -30,32 +72,11 @@ async def upload_document(
     Returns:
         Dict with upload and processing results
     """
-    try:
-        file_path = await storage_service.upload_file(
-            file.file, filename=file.filename, content_type=file.content_type
-        )
-
-        # metadata = await ocr_service.extract_metadata(file_path)
-
-        return {
-            "file_path": file_path,
-            # "metadata": metadata
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("")
-async def get_documents(session: AsyncSession = Depends(get_async_session)):
-    """Get existing documents"""
-    return (await session.scalars(select(Document))).all()
-
-
-@router.post("/document")
-async def add_document(
-    body: Document = Depends(Document.add_document),
-    session: AsyncSession = Depends(get_async_session),
-):
-    """add new document"""
-    return (await session.scalars(select(Document))).all()
+    file_path = await storage_service.upload_file(
+        file.file, filename=file.filename, content_type=file.content_type
+    )
+    # metadata = await ocr_service.extract_metadata(file_path)
+    return {
+        "file_path": file_path,
+        # "metadata": metadata
+    }
