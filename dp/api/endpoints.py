@@ -3,18 +3,17 @@ Open ID connect and oAuth Authenticated endpoints.
 Requires Admin credentials
 """
 
-from typing import Any, Dict
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from dp.services.storage import MinIOStorageService
+from dp.settings import get_minio_client, get_settings
+from minio import Minio
 
 from ..database.models import Document
 from ..utils import get_async_session
-from .schemas import AddDocument, UpdateDocument
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -30,53 +29,38 @@ async def get_documents(
 
 @router.post("/document")
 async def add_document(
-    body: AddDocument,
+    file: UploadFile,
     session: AsyncSession = Depends(get_async_session),
+    client: Minio = Depends(get_minio_client),
 ):
     """add new document"""
-    id_ = await session.scalar(Document.add_document_stmt(**body.model_dump()))
+    id_ = uuid4()
+    path = f"{id_}_{file.filename}"
+    client.put_object(
+        bucket_name=get_settings().minio_bucket,
+        object_name=path,
+        data=file.file,
+        length=file.file.seek(0, 2),
+        content_type=file.content_type,
+    )
+    await session.execute(
+        Document.add_document_stmt(id_, file.filename, path, file.content_type)
+    )
     return {"id_": id_}
-
-
-@router.patch("/document")
-async def update_document(
-    body: UpdateDocument,
-    session: AsyncSession = Depends(get_async_session),
-):
-    """add new document"""
-    await session.execute(Document.update_document_stmt(**body.model_dump()))
-    return {"detail": "success"}
 
 
 @router.delete("/document")
 async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
+    client: Minio = Depends(get_minio_client),
 ):
     """add new document"""
-    await session.execute(Document.delete_document_stmt(id_))
-    return {"detail": "success"}
-
-
-@router.post("/upload")
-async def upload_document(
-    file: UploadFile = File(...),  # This should be dynamically passed?
-    storage_service: MinIOStorageService = Depends(),
-) -> Dict[str, Any]:
-    """
-    Upload and process a document
-
-    Args:
-        file (UploadFile): Document file to upload
-
-    Returns:
-        Dict with upload and processing results
-    """
-    file_path = await storage_service.upload_file(
-        file.file, filename=file.filename, content_type=file.content_type
+    path: str | None = await session.scalar(
+        Document.delete_document_stmt(id_).returning(Document.path)
     )
-    # metadata = await ocr_service.extract_metadata(file_path)
-    return {
-        "file_path": file_path,
-        # "metadata": metadata
-    }
+    if not path:
+        raise HTTPException(404, "Object not found")
+    client.remove_object(get_settings().minio_bucket, path)
+
+    return {"detail": "success"}

@@ -7,7 +7,7 @@ import uvicorn
 
 from .database.config import run_downgrade, run_upgrade
 from .schemas import DbActions
-from .settings import get_settings
+from .settings import get_settings, setup_logging
 
 app = typer.Typer()
 
@@ -46,4 +46,5 @@ def db(
 
 
 if __name__ == "__main__":
+    setup_logging()
     app()

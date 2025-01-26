@@ -13,8 +13,8 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "typer>=0.15.1",
     "uvicorn>=0.34.0",
-    "minio>=7.2.15",
     "doctr>=1.9.0",
     "greenlet>=3.1.1",
     "python-multipart>=0.0.20",
+    "minio>=7.2.15",
 ]

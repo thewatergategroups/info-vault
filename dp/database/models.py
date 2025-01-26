@@ -3,9 +3,9 @@ Postgres Database table definitions
 """
 
 from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, exists, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Field, SQLModel
 
@@ -23,26 +23,22 @@ class Document(SQLModel, table=True):
     modified_at: datetime = Field(default=datetime.now(timezone.utc))
 
     @classmethod
-    def add_document_stmt(cls, name: str, path: str, type_: DocType):
+    def add_document_stmt(cls, id_: UUID, name: str, path: str, type_: DocType):
         """Add or update document"""
-        return (
-            insert(cls)
-            .values(id_=uuid4(), name=name, path=path, type_=type_)
-            .returning(cls.id_)
+        stmt = insert(cls).values(
+            id_=id_,
+            name=name,
+            path=path,
+            type_=type_,
+            modified_at=datetime.now(timezone.utc),
         )
-
-    @classmethod
-    def update_document_stmt(cls, id_: UUID, name: str, path: str, type_: DocType):
-        """Add or update document"""
-        return (
-            update(cls)
-            .where(cls.id_ == id_)
-            .values(
-                name=name,
-                path=path,
-                type_=type_,
-                modified_at=datetime.now(timezone.utc),
-            )
+        return stmt.on_conflict_do_update(
+            index_elements=cls.__mapper__.primary_key,
+            set_={
+                column.name: getattr(stmt.excluded, column.name)
+                for column in cls.__mapper__.columns
+                if not column.primary_key and not column.server_default
+            },
         )
 
     @classmethod
