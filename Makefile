@@ -13,7 +13,7 @@ up:
 	docker compose logs -f 
 
 debug:
-	docker compose run -it $(REPOSITORY) bash
+	docker run -it ghcr.io/thewatergategroups/$(REPOSITORY) bash
 
 down: 
 	docker compose down
