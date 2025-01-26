@@ -13,7 +13,7 @@ from dp.settings import get_minio_client, get_settings
 from minio import Minio
 
 from ..database.models import Document
-from ..utils import get_async_session
+from ..settings import get_async_session
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 

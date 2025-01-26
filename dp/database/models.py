@@ -5,7 +5,7 @@ Postgres Database table definitions
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import delete, exists, select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Field, SQLModel
 
