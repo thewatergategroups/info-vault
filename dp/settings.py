@@ -9,8 +9,12 @@ import sys
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
+<<<<<<< HEAD
 from redis.asyncio import Redis
 from minio import Minio
+=======
+
+>>>>>>> edc7c22 (add storage and fix up settings client)
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 
 
@@ -44,7 +48,7 @@ class Settings(BaseSettings):
 
 
 @lru_cache
-def get_settings():
+def get_settings() -> Settings:
     """Get application settings global object"""
     return Settings()
 
@@ -75,7 +79,6 @@ def get_os_client():
         client.make_bucket(settings.os_settings.os_bucket)
         logging.info("bucket %s created", settings.os_settings.os_bucket)
     return client
-
 
 def setup_logging():
     """
