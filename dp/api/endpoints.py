@@ -10,11 +10,18 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+<<<<<<< HEAD
 # from doctr.io import DocumentFile
 # from doctr.models import ocr_predictor
 from dp.settings import get_os_client, get_settings
 from minio import Minio
 from ..schemas import DocMetadataPayload
+=======
+from dp.settings import get_settings
+from dp.services.storage import MinIOStorageService
+from dp.services.logger import logger
+
+>>>>>>> ce28893 (add minio client directly along with a logger)
 from ..database.models import Document
 from ..settings import get_async_session, get_redis_client
 
@@ -81,6 +88,7 @@ async def add_document(
     session: AsyncSession = Depends(get_async_session),
     client: Minio = Depends(get_os_client),
     red: Redis = Depends(get_redis_client),
+    # client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
     """add new document"""
     id_ = uuid4()
@@ -93,6 +101,12 @@ async def add_document(
         part_size=10 * 1024 * 1024,  # 10MB
         content_type=file.content_type,
     )
+    # logger.info(f"Uploading file {path=}")
+    # client.upload_file(
+    #     file=file.file,
+    #     filename=path,
+    #     content_type=file.content_type
+    # )
     await session.execute(
         Document.add_document_stmt(id_, file.filename, path, file.content_type)
     )
@@ -110,6 +124,7 @@ async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
     client: Minio = Depends(get_os_client),
+    # client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
     """add new document"""
     path: str | None = await session.scalar(
