@@ -9,8 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from dp.settings import get_minio_client, get_settings
-from minio import Minio
+from dp.settings import get_settings
+from dp.services.storage import MinIOStorageService
+from dp.services.logger import logger
 
 from ..database.models import Document
 from ..settings import get_async_session
@@ -31,17 +32,17 @@ async def get_documents(
 async def add_document(
     file: UploadFile,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_minio_client),
+    client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
     """add new document"""
     id_ = uuid4()
     path = f"{id_}_{file.filename}"
-    client.put_object(
-        bucket_name=get_settings().minio_bucket,
-        object_name=path,
-        data=file.file,
-        length=file.file.seek(0, 2),
-        content_type=file.content_type,
+
+    logger.info(f"Uploading file {path=}")
+    client.upload_file(
+        file=file.file,
+        filename=path,
+        content_type=file.content_type
     )
     await session.execute(
         Document.add_document_stmt(id_, file.filename, path, file.content_type)
@@ -53,7 +54,7 @@ async def add_document(
 async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_minio_client),
+    client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
     """add new document"""
     path: str | None = await session.scalar(
