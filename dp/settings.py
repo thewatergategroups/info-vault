@@ -10,7 +10,6 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings
 
-from minio import Minio
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 
 
@@ -28,26 +27,17 @@ class Settings(BaseSettings):
 
 
 @lru_cache
-def get_settings():
+def get_settings() -> Settings:
     """Get application settings global object"""
     return Settings()
 
 
-@lru_cache
-def get_minio_client():
-    """return cached minio client"""
-    settings = get_settings()
-    client = Minio(
-        settings.minio_endpoint,
-        access_key=settings.minio_access_key,
-        secret_key=settings.minio_secret_key,
-        secure=False,
-    )
-    found = client.bucket_exists(settings.minio_bucket)
-    if not found:
-        client.make_bucket(settings.minio_bucket)
-        logging.info("bucket %s created", settings.minio_bucket)
-    return client
+# @lru_cache
+# def get_minio_client():
+#     """return cached minio client"""
+#     # client = MinIOStorageService()
+#     # client = ""
+#     return client
 
 
 def setup_logging():
