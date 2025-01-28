@@ -4,7 +4,7 @@
       {
         "label": "Setup Environment",
         "type": "shell",
-        "command": "source ${workspaceFolder}/.venv/bin/activate.fish && docker compose up -d && python -m dotenv run -- python -m dp db -a upgrade",
+        "command": "source ${workspaceFolder}/.venv/bin/activate.fish && docker compose up -d && python -m dotenv run -- python -m dp db -a api",
         "problemMatcher": []
       },
       {
