@@ -1,6 +1,5 @@
 """
-Open ID connect and oAuth Authenticated endpoints.
-Requires Admin credentials
+Document Manipulation endpoints
 """
 
 from datetime import timedelta
