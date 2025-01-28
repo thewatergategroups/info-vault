@@ -21,7 +21,7 @@ down:
 push: build
 	docker push ghcr.io/thewatergategroups/$(REPOSITORY):latest
 
-migrate: 
+migrate:
 	docker compose up -d --remove-orphans
 	python -m alembic revision --autogenerate -m $(m)
 	docker compose down

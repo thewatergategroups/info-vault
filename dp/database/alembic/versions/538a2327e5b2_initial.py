@@ -1,19 +1,19 @@
 """initial
 
-Revision ID: 9be5ca4244ac
+Revision ID: 538a2327e5b2
 Revises: 
-Create Date: 2025-01-26 00:18:19.387268
+Create Date: 2025-01-28 02:49:52.723464
 
 """
 
 from typing import Sequence, Union
 
+from alembic import op
 import sqlalchemy as sa
 import sqlmodel
-from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "9be5ca4244ac"
+revision: str = "538a2327e5b2"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,22 +26,7 @@ def upgrade() -> None:
         sa.Column("id_", sa.Uuid(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("path", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-        sa.Column(
-            "type_",
-            sa.Enum(
-                "PDF",
-                "DOCX",
-                "DOC",
-                "TXT",
-                "JSON",
-                "CSV",
-                "IMAGE",
-                "VIDEO",
-                "UNKNOWN",
-                name="doctype",
-            ),
-            nullable=False,
-        ),
+        sa.Column("type_", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("modified_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id_"),

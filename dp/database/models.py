@@ -18,7 +18,7 @@ class Document(SQLModel, table=True):
     id_: UUID = Field(primary_key=True)
     name: str
     path: str
-    type_: DocType
+    type_: str
     created_at: datetime = Field(default=datetime.now(timezone.utc))
     modified_at: datetime = Field(default=datetime.now(timezone.utc))
 
@@ -47,11 +47,14 @@ class Document(SQLModel, table=True):
         return delete(cls).where(cls.id_ == id_)
 
     @classmethod
-    def get_documents_stmt(cls, id_: UUID | None = None, type_: DocType | None = None):
+    def get_documents_stmt(cls, type_: DocType | None = None):
         """Add or update document"""
         stmt = select(cls)
-        if id_:
-            stmt = stmt.where(cls.id_ == id_)
         if type_:
             stmt = stmt.where(cls.type_ == type_)
         return stmt
+
+    @classmethod
+    def get_document_stmt(cls, id_: str):
+        """Add or update document"""
+        return select(cls).where(cls.id_ == id_)

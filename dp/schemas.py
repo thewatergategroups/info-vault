@@ -15,12 +15,5 @@ class DbActions(StrEnum):
 class DocType(StrEnum):
     """Document type"""
 
-    PDF = "pdf"
-    DOCX = "docx"
-    DOC = "doc"
-    TXT = "txt"
-    JSON = "json"
-    CSV = "csv"
-    IMAGE = "image"
-    VIDEO = "video"
-    UNKNOWN = "unknown"
+    JPEG = "image/jpeg"
+    PNG = "image/png"

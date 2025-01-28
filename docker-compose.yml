@@ -12,8 +12,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
+
 
   minio:
     image: quay.io/minio/minio
@@ -34,7 +33,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  pg_data:
-    driver: local
   minio_data:
     driver: local
