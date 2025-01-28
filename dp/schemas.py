@@ -3,6 +3,9 @@ Schemas
 """
 
 from enum import StrEnum
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class DbActions(StrEnum):
@@ -17,3 +20,29 @@ class DocType(StrEnum):
 
     JPEG = "image/jpeg"
     PNG = "image/png"
+
+
+class RedisMessageType(StrEnum):
+    """Redis message type"""
+
+    SUBSCRIBE = "subscribe"
+    MESSAGE = "message"
+
+
+class RedisMessage(BaseModel):
+    """
+    Redis message schema
+    """
+
+    data: bytes | int
+    type: RedisMessageType
+
+
+class DocMetadataPayload(BaseModel):
+    """
+    Document metadata schema
+    """
+
+    id_: UUID
+    path: str
+    type_: DocType

@@ -9,19 +9,35 @@ import sys
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
-
+from redis.asyncio import Redis
 from minio import Minio
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
+
+
+class ObjectStorageSettings(BaseSettings):
+    """Object Storage Settings"""
+
+    os_endpoint: str
+    os_access_key: str
+    os_secret_key: str
+    os_bucket: str
+
+
+class RedisSettings(BaseSettings):
+    """Redis Settings"""
+
+    subscription_name: str
+    redis_host: str
+    redis_port: int
+    redis_db: int
 
 
 class Settings(BaseSettings):
     """Application Settings"""
 
     log_level: str = "INFO"
-    minio_endpoint: str = "localhost:9000"
-    minio_access_key: str = "minioadmin"
-    minio_secret_key: str = "minioadmin"
-    minio_bucket: str = "document-storage"
+    os_settings: ObjectStorageSettings = ObjectStorageSettings()
+    red_settings: RedisSettings = RedisSettings()
     db_settings: DbSettings = DbSettings(
         env_script_location=f"{pathlib.Path(__file__).parent.resolve()}/database/alembic"
     )
@@ -34,19 +50,30 @@ def get_settings():
 
 
 @lru_cache
-def get_minio_client():
+def get_redis_client():
+    """return cached redis client"""
+    settings = get_settings()
+    return Redis(
+        host=settings.red_settings.redis_host,
+        port=settings.red_settings.redis_port,
+        db=settings.red_settings.redis_db,
+    )
+
+
+@lru_cache
+def get_os_client():
     """return cached minio client"""
     settings = get_settings()
     client = Minio(
-        settings.minio_endpoint,
-        access_key=settings.minio_access_key,
-        secret_key=settings.minio_secret_key,
+        settings.os_settings.os_endpoint,
+        access_key=settings.os_settings.os_access_key,
+        secret_key=settings.os_settings.os_secret_key,
         secure=False,
     )
-    found = client.bucket_exists(settings.minio_bucket)
+    found = client.bucket_exists(settings.os_settings.os_bucket)
     if not found:
-        client.make_bucket(settings.minio_bucket)
-        logging.info("bucket %s created", settings.minio_bucket)
+        client.make_bucket(settings.os_settings.os_bucket)
+        logging.info("bucket %s created", settings.os_settings.os_bucket)
     return client
 
 

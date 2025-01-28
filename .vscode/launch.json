@@ -1,16 +1,33 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
       {
-        "name": "Python: Run Module with .env",
-        "type": "debugpy",
-        "request": "launch",
-        "module": "dp", // Replace with your module name
-        "envFile": "${workspaceFolder}/.env",
-        "console": "integratedTerminal",
-        "args": ["api"],
-        "preLaunchTask": "Setup Environment",
-        "postDebugTask": "Teardown Environment"
+          "name": "Python: API Entrypoint",
+          "type": "debugpy",
+          "request": "launch",
+          "module": "dp", // Replace with your module for the API
+          "envFile": "${workspaceFolder}/.env",
+          "console": "integratedTerminal",
+          "args": ["api"],
+          "preLaunchTask": "Setup Environment",
+          "postDebugTask": "Teardown Environment"
+      },
+      {
+          "name": "Python: Worker Entrypoint",
+          "type": "debugpy",
+          "request": "launch",
+          "module": "dp", // Replace with your module for the worker
+          "envFile": "${workspaceFolder}/.env",
+          "console": "integratedTerminal",
+          "args": ["worker"],
+          "preLaunchTask": "Setup Environment",
+          "postDebugTask": "Teardown Environment"
       }
-    ]
-  }
+  ],
+  "compounds": [
+      {
+          "name": "Run API and Worker",
+          "configurations": ["Python: API Entrypoint", "Python: Worker Entrypoint"]
+      }
+  ]
+}
