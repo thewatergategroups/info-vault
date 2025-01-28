@@ -5,8 +5,8 @@ Postgres Database table definitions
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import delete, select
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert, JSONB
 from sqlmodel import Field, SQLModel
 
 from ..schemas import DocType
@@ -19,8 +19,14 @@ class Document(SQLModel, table=True):
     name: str
     path: str
     type_: str
+    metad: dict | None = Field(sa_type=JSONB, default=None)
     created_at: datetime = Field(default=datetime.now(timezone.utc))
     modified_at: datetime = Field(default=datetime.now(timezone.utc))
+
+    @classmethod
+    def set_metadata(cls, id_: UUID, metadata: dict):
+        """Add or update document"""
+        return update(cls).where(cls.id_ == id_).values(metad=metadata)
 
     @classmethod
     def add_document_stmt(cls, id_: UUID, name: str, path: str, type_: DocType):

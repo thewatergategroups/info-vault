@@ -7,8 +7,9 @@ import signal
 import logging
 from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
-from .settings import get_os_client, get_settings, get_redis_client
+from .settings import get_os_client, get_settings, get_redis_client, get_sync_session
 from .schemas import DocType, RedisMessage, RedisMessageType, DocMetadataPayload
+from .database.models import Document
 
 
 async def work():
@@ -34,6 +35,7 @@ async def pubsub_listener():
     """
     channel_name = get_settings().red_settings.subscription_name
     redis_client = get_redis_client()
+
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(channel_name)
     logging.info("Subscribed to channel: %s", channel_name)
@@ -59,7 +61,11 @@ async def pubsub_listener():
                     continue
                 model = ocr_predictor(pretrained=True)
                 result = model(doc)
-                print(result.export())
+                with get_sync_session().begin() as session:
+                    session.execute(
+                        Document.set_metadata(id_=metad.id_, metadata=result.export())
+                    )
+                logging.info("Document processed: %s", metad.id_)
 
     finally:
         await pubsub.close()

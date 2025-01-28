@@ -115,7 +115,7 @@ async def get_async_session():
         yield session
 
 
-def get_sync_sessionm():
+def get_sync_session():
     """
     return a generator of the sync postgres session for use in endpoints.
     goes out of scope and closes connection at the end of endpoint execution
