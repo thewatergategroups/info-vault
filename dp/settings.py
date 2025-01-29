@@ -4,47 +4,17 @@ Application Settings
 
 import logging
 import os
-import pathlib
 import sys
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
-<<<<<<< HEAD
 from redis.asyncio import Redis
-from minio import Minio
-=======
+from dp.services.storage import MinIOStorageService
+from dp.types import Settings, ObjectStorageSettings, RedisSettings, DbSettings
 
->>>>>>> edc7c22 (add storage and fix up settings client)
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 
 
-class ObjectStorageSettings(BaseSettings):
-    """Object Storage Settings"""
-
-    os_endpoint: str
-    os_access_key: str
-    os_secret_key: str
-    os_bucket: str
-
-
-class RedisSettings(BaseSettings):
-    """Redis Settings"""
-
-    subscription_name: str
-    redis_host: str
-    redis_port: int
-    redis_db: int
-
-
-class Settings(BaseSettings):
-    """Application Settings"""
-
-    log_level: str = "INFO"
-    os_settings: ObjectStorageSettings = ObjectStorageSettings()
-    red_settings: RedisSettings = RedisSettings()
-    db_settings: DbSettings = DbSettings(
-        env_script_location=f"{pathlib.Path(__file__).parent.resolve()}/database/alembic"
-    )
 
 
 @lru_cache
@@ -65,19 +35,14 @@ def get_redis_client():
 
 
 @lru_cache
-def get_os_client():
+def get_os_client() -> MinIOStorageService:
     """return cached minio client"""
     settings = get_settings()
-    client = Minio(
-        settings.os_settings.os_endpoint,
-        access_key=settings.os_settings.os_access_key,
-        secret_key=settings.os_settings.os_secret_key,
-        secure=False,
-    )
-    found = client.bucket_exists(settings.os_settings.os_bucket)
-    if not found:
-        client.make_bucket(settings.os_settings.os_bucket)
-        logging.info("bucket %s created", settings.os_settings.os_bucket)
+    client = MinIOStorageService(settings.os_settings)
+    # found = client.bucket_exists(settings.os_settings.os_bucket)
+    # if not found:
+    #     client.make_bucket(settings.os_settings.os_bucket)
+    #     logging.info("bucket %s created", settings.os_settings.os_bucket)
     return client
 
 def setup_logging():

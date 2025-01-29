@@ -10,18 +10,15 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-<<<<<<< HEAD
 # from doctr.io import DocumentFile
 # from doctr.models import ocr_predictor
 from dp.settings import get_os_client, get_settings
-from minio import Minio
+# from minio import Minio
 from ..schemas import DocMetadataPayload
-=======
 from dp.settings import get_settings
 from dp.services.storage import MinIOStorageService
 from dp.services.logger import logger
 
->>>>>>> ce28893 (add minio client directly along with a logger)
 from ..database.models import Document
 from ..settings import get_async_session, get_redis_client
 
@@ -41,7 +38,7 @@ async def list_documents(
 async def generate_presigned_url(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: MinIOStorageService = Depends(get_os_client),
 ):
     """
     Generate a presigned URL for accessing an object in the browser.
@@ -62,7 +59,7 @@ async def generate_presigned_url(
 async def download_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: MinIOStorageService = Depends(get_os_client),
 ):
     """
     Download an object from MinIO.
@@ -86,7 +83,7 @@ async def download_document(
 async def add_document(
     file: UploadFile,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: MinIOStorageService = Depends(get_os_client),
     red: Redis = Depends(get_redis_client),
     # client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
@@ -123,7 +120,7 @@ async def add_document(
 async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: MinIOStorageService = Depends(get_os_client),
     # client: MinIOStorageService = Depends(MinIOStorageService, use_cache=True),
 ):
     """add new document"""
