@@ -4,7 +4,8 @@ Create the FastApi application.
 
 from fastapi import FastAPI
 
-from .endpoints import router
+from .doc_router import router as docrouter
+from .gpt_router import router as gptrouter
 
 
 def create_app() -> FastAPI:
@@ -16,6 +17,7 @@ def create_app() -> FastAPI:
         description="Parses Documents",
         version="1.0",
     )
-    app.include_router(router)
+    app.include_router(docrouter)
+    app.include_router(gptrouter)
 
     return app

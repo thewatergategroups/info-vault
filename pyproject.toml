@@ -18,4 +18,6 @@ dependencies = [
     "minio>=7.2.15",
     "python-doctr[torch,viz,html,contib]>=0.10.0",
     "redis>=5.2.1",
+    "pgvector>=0.3.6",
+    "openai>=1.63.0",
 ]

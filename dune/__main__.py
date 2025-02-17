@@ -11,6 +11,7 @@ from .schemas import DbActions
 from .settings import get_settings, setup_logging
 from .worker import work
 
+
 app = typer.Typer()
 
 
@@ -18,7 +19,7 @@ app = typer.Typer()
 def api():
     """API for querying data"""
     uvicorn.run(
-        "dp.api.app:create_app",
+        "dune.api.app:create_app",
         workers=1,
         reload=True,
         host="0.0.0.0",

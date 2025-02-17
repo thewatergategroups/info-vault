@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from dp.database.models import SQLModel
+from dune.database.models import SQLModel
 
 config = context.config
 

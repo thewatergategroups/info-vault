@@ -5,7 +5,7 @@
           "name": "Python: API Entrypoint",
           "type": "debugpy",
           "request": "launch",
-          "module": "dp", // Replace with your module for the API
+          "module": "dune", // Replace with your module for the API
           "envFile": "${workspaceFolder}/.env",
           "console": "integratedTerminal",
           "args": ["api"],
@@ -16,7 +16,7 @@
           "name": "Python: Worker Entrypoint",
           "type": "debugpy",
           "request": "launch",
-          "module": "dp", // Replace with your module for the worker
+          "module": "dune", // Replace with your module for the worker
           "envFile": "${workspaceFolder}/.env",
           "console": "integratedTerminal",
           "args": ["worker"],

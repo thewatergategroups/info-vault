@@ -8,8 +8,15 @@ from uuid import UUID
 from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert, JSONB
 from sqlmodel import Field, SQLModel
-
+from pgvector.sqlalchemy import Vector
 from ..schemas import DocType
+
+
+class Embeddings(SQLModel, table=True):
+    """Vector embeddings"""
+
+    id_: int = Field(primary_key=True)
+    vector: list[float] = Field(sa_type=Vector)
 
 
 class Document(SQLModel, table=True):

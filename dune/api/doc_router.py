@@ -10,13 +10,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# from doctr.io import DocumentFile
-# from doctr.models import ocr_predictor
-from dp.settings import get_os_client, get_settings
 from minio import Minio
 from ..schemas import DocMetadataPayload
 from ..database.models import Document
-from ..settings import get_async_session, get_redis_client
+from ..settings import get_async_session, get_redis_client, get_os_client, get_settings
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
