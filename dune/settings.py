@@ -19,8 +19,9 @@ from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessio
 
 
 @lru_cache
-def get_vector_store(collection: str = "documents"):
+def get_vector_store():
     """get pgvector settings"""
+    collection = "documents"
     return PGVector(
         OpenAIEmbeddings(model="text-embedding-3-large"),
         collection_name=collection,

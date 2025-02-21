@@ -71,3 +71,8 @@ class Document(SQLModel, table=True):
     def get_document_stmt(cls, id_: str):
         """Add or update document"""
         return select(cls).where(cls.id_ == id_)
+
+    @classmethod
+    def get_document_name_stmt(cls, name: str):
+        """Add or update document"""
+        return select(cls).where(cls.name == name)

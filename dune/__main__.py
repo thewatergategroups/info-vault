@@ -21,7 +21,6 @@ def api():
     uvicorn.run(
         "dune.api.app:create_app",
         workers=1,
-        reload=True,
         host="0.0.0.0",
         factory=True,
         port=8000,

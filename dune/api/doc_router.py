@@ -30,6 +30,15 @@ async def list_documents(
     return (await session.scalars(stmt)).all()
 
 
+@router.get("/document")
+async def check_document_exists(
+    filename: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get existing documents"""
+    return (await session.scalars(Document.get_document_name_stmt(filename))).all()
+
+
 @router.get("/document/presigned-url")
 async def generate_presigned_url(
     id_: UUID,

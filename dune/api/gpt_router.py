@@ -3,13 +3,15 @@ GPT endpoints
 """
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_postgres import PGVector
 from langchain_core.documents import Document
-from ..gpt.settings import (
+
+from ..gpt.helpers import (
+    stream,
     add_message,
     create_thread,
-    get_messages,
     delete_thread,
     retrieve_thread,
 )
@@ -18,12 +20,10 @@ from ..settings import get_vector_store
 router = APIRouter(prefix="/gpt", tags=["GPT endpoints"])
 
 
-@router.get("/messages/{thread_id}")
-def get_messages_(thread_id: str):
-    """
-    Stream chat responses
-    """
-    return get_messages(thread_id)
+@router.get("/stream")
+def stream_endpoint(thread_id: str):
+    """Stream response from thread"""
+    return StreamingResponse(stream(thread_id), media_type="text/plain")
 
 
 class PostMessage(BaseModel):
@@ -38,12 +38,12 @@ def post_message(body: PostMessage, store: PGVector = Depends(get_vector_store))
     """
     send a message
     """
-    docs: list[Document] = store.search(body.message)
+    docs: list[Document] = store.search(body.message, "similarity")
     context = [
         f"document with id: {doc.id} has content {doc.page_content}" for doc in docs
     ]
     message = "\n".join(
-        [*context, f"The message coming in looking for an answer is {body.message}"]
+        ["Here is some context:", *context, "Here is the message:", body.message]
     )
 
     return add_message(body.thread_id, message)
@@ -57,7 +57,7 @@ def post_thread():
     return create_thread()
 
 
-@router.delete("/thread/{thread_id}")
+@router.delete("/thread")
 def del_thread(thread_id: str):
     """
     delete thread
@@ -65,7 +65,7 @@ def del_thread(thread_id: str):
     return delete_thread(thread_id)
 
 
-@router.delete("/thread/{thread_id}")
+@router.get("/thread")
 def get_thread(thread_id: str):
     """
     get thread info
