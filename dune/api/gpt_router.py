@@ -2,54 +2,28 @@
 GPT endpoints
 """
 
-import asyncio
-from queue import Empty, Queue
-import threading
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from ..gpt.stream import stream_run
+from langchain_postgres import PGVector
+from langchain_core.documents import Document
 from ..gpt.settings import (
     add_message,
     create_thread,
-    get_assistant,
+    get_messages,
     delete_thread,
     retrieve_thread,
 )
+from ..settings import get_vector_store
 
 router = APIRouter(prefix="/gpt", tags=["GPT endpoints"])
 
 
-async def event_generator(token_queue: Queue):
-    """
-    Fetches tokens from the token queue and yields the output
-    """
-    while True:
-        try:
-            token = token_queue.get(timeout=1)
-            if token is None:
-                break
-            yield token
-        except Empty:
-            await asyncio.sleep(0.1)
-
-
-@router.get("/stream/{thread_id}")
-def stream_endpoint(thread_id: str):
+@router.get("/messages/{thread_id}")
+def get_messages_(thread_id: str):
     """
     Stream chat responses
     """
-    token_queue = Queue()
-    # Run the streaming function in a separate thread.
-    threading.Thread(
-        target=stream_run,
-        args=(thread_id, get_assistant().id, token_queue),
-        daemon=True,
-    ).start()
-
-    return StreamingResponse(
-        event_generator(token_queue), media_type="text/event-stream"
-    )
+    return get_messages(thread_id)
 
 
 class PostMessage(BaseModel):
@@ -60,11 +34,19 @@ class PostMessage(BaseModel):
 
 
 @router.post("/message")
-def post_message(body: PostMessage):
+def post_message(body: PostMessage, store: PGVector = Depends(get_vector_store)):
     """
     send a message
     """
-    return add_message(body.thread_id, body.message)
+    docs: list[Document] = store.search(body.message)
+    context = [
+        f"document with id: {doc.id} has content {doc.page_content}" for doc in docs
+    ]
+    message = "\n".join(
+        [*context, f"The message coming in looking for an answer is {body.message}"]
+    )
+
+    return add_message(body.thread_id, message)
 
 
 @router.post("/thread")

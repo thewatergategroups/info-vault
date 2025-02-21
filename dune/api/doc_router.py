@@ -2,6 +2,7 @@
 Document Manipulation endpoints
 """
 
+from typing import TYPE_CHECKING
 from datetime import timedelta
 from uuid import UUID, uuid4
 from redis.asyncio import Redis
@@ -10,10 +11,12 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from minio import Minio
 from ..schemas import DocMetadataPayload
 from ..database.models import Document
 from ..settings import get_async_session, get_redis_client, get_os_client, get_settings
+
+if TYPE_CHECKING:
+    from types_aiobotocore_s3 import S3Client
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -31,7 +34,7 @@ async def list_documents(
 async def generate_presigned_url(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: "S3Client" = Depends(get_os_client),
 ):
     """
     Generate a presigned URL for accessing an object in the browser.
@@ -40,10 +43,13 @@ async def generate_presigned_url(
     if not item:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    presigned_url = client.presigned_get_object(
-        bucket_name=get_settings().os_settings.os_bucket,
-        object_name=item.path,
-        expires=timedelta(hours=1),  # URL expiration in seconds (1 hour)
+    presigned_url = await client.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": get_settings().os_settings.os_bucket,
+            "Key": item.path,
+        },
+        ExpiresIn=int(timedelta(hours=1).total_seconds()),  # 1 hour in seconds
     )
     return {"url": presigned_url}
 
@@ -52,7 +58,7 @@ async def generate_presigned_url(
 async def download_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: "S3Client" = Depends(get_os_client),
 ):
     """
     Download an object from MinIO.
@@ -61,9 +67,9 @@ async def download_document(
     if not document:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    response = client.get_object(
-        bucket_name=get_settings().os_settings.os_bucket,
-        object_name=document.path,
+    response = await client.get_object(
+        Bucket=get_settings().os_settings.os_bucket,
+        Key=document.path,
     )
     return StreamingResponse(
         response,
@@ -76,19 +82,17 @@ async def download_document(
 async def add_document(
     file: UploadFile,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: "S3Client" = Depends(get_os_client),
     red: Redis = Depends(get_redis_client),
 ):
     """add new document"""
     id_ = uuid4()
     path = f"{id_}_{file.filename}"
-    client.put_object(
-        bucket_name=get_settings().os_settings.os_bucket,
-        object_name=path,
-        data=file.file,
-        length=-1,  # use -1 to auto determine length
-        part_size=10 * 1024 * 1024,  # 10MB
-        content_type=file.content_type,
+    await client.put_object(
+        Bucket=get_settings().os_settings.os_bucket,
+        Key=path,
+        Body=file.file,
+        ContentType=file.content_type,
     )
     await session.execute(
         Document.add_document_stmt(id_, file.filename, path, file.content_type)
@@ -106,7 +110,7 @@ async def add_document(
 async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
-    client: Minio = Depends(get_os_client),
+    client: "S3Client" = Depends(get_os_client),
 ):
     """add new document"""
     path: str | None = await session.scalar(
@@ -114,6 +118,6 @@ async def delete_document(
     )
     if not path:
         raise HTTPException(404, "Object not found")
-    client.remove_object(get_settings().os_settings.os_bucket, path)
+    await client.delete_object(Bucket=get_settings().os_settings.os_bucket, Key=path)
 
     return {"detail": "success"}

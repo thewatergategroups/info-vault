@@ -15,9 +15,15 @@ dependencies = [
     "uvicorn>=0.34.0",
     "greenlet>=3.1.1",
     "python-multipart>=0.0.20",
-    "minio>=7.2.15",
-    "python-doctr[torch,viz,html,contib]>=0.10.0",
     "redis>=5.2.1",
-    "pgvector>=0.3.6",
     "openai>=1.63.0",
+    "langchain-core>=0.3.37",
+    "langchain-openai>=0.3.6",
+    "langchain-postgres>=0.0.13",
+    "aioboto3>=13.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "types-aioboto3[s3]>=13.4.0",
 ]

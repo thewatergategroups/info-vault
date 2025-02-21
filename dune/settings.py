@@ -2,25 +2,40 @@
 Application Settings
 """
 
+from contextlib import asynccontextmanager
 import logging
 import os
 import pathlib
 import sys
 from functools import lru_cache
 
+import aioboto3
 from pydantic_settings import BaseSettings
 from redis.asyncio import Redis
-from minio import Minio
+from langchain_openai import OpenAIEmbeddings
+from langchain_postgres import PGVector
+
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
+
+
+@lru_cache
+def get_vector_store(collection: str = "documents"):
+    """get pgvector settings"""
+    return PGVector(
+        OpenAIEmbeddings(model="text-embedding-3-large"),
+        collection_name=collection,
+        connection=get_settings().db_settings.url,
+    )
 
 
 class ObjectStorageSettings(BaseSettings):
     """Object Storage Settings"""
 
-    os_endpoint: str
+    os_endpoint: str = "http://localhost:9000"
     os_access_key: str
     os_secret_key: str
-    os_bucket: str
+    os_bucket: str = "document-bucket"
+    os_region: str = "eu-west-2"
 
 
 class RedisSettings(BaseSettings):
@@ -60,21 +75,21 @@ def get_redis_client():
     )
 
 
-@lru_cache
-def get_os_client():
+async def get_os_client():
     """return cached minio client"""
     settings = get_settings()
-    client = Minio(
-        settings.os_settings.os_endpoint,
-        access_key=settings.os_settings.os_access_key,
-        secret_key=settings.os_settings.os_secret_key,
-        secure=False,
-    )
-    found = client.bucket_exists(settings.os_settings.os_bucket)
-    if not found:
-        client.make_bucket(settings.os_settings.os_bucket)
-        logging.info("bucket %s created", settings.os_settings.os_bucket)
-    return client
+    session = aioboto3.Session()
+    async with session.client(
+        "s3",
+        region_name=settings.os_settings.os_region,
+        endpoint_url=settings.os_settings.os_endpoint,
+        aws_access_key_id=settings.os_settings.os_access_key,
+        aws_secret_access_key=settings.os_settings.os_secret_key,
+    ) as s3:
+        yield s3
+
+
+os_client_context = asynccontextmanager(get_os_client)
 
 
 def setup_logging():

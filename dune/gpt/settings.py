@@ -70,3 +70,7 @@ def add_message(thread_id: str, message: str):
         role="user",
         content=message,
     )
+
+
+def get_messages(thread_id: str):
+    return get_oai_client().beta.threads.messages.list(thread_id=thread_id)

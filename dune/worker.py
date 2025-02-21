@@ -5,11 +5,14 @@ Worker for object analysis using Redis Pub/Sub
 import asyncio
 import signal
 import logging
-from doctr.io import DocumentFile
-from doctr.models import ocr_predictor
-from .settings import get_os_client, get_settings, get_redis_client, get_sync_session
-from .schemas import DocType, RedisMessage, RedisMessageType, DocMetadataPayload
-from .database.models import Document
+from .settings import (
+    os_client_context,
+    get_settings,
+    get_redis_client,
+    get_vector_store,
+)
+from .schemas import RedisMessage, RedisMessageType, DocMetadataPayload
+from langchain_core.documents import Document
 
 
 async def work():
@@ -50,21 +53,16 @@ async def pubsub_listener():
                 metad = DocMetadataPayload.model_validate_json(
                     message_model.data.decode("utf-8")
                 )
-                file_stream = get_os_client().get_object(
-                    bucket_name=get_settings().os_settings.os_bucket,
-                    object_name=metad.path,
-                )
-                if metad.type_ in (DocType.JPEG, DocType.PNG):
-                    doc = DocumentFile.from_images(file_stream.read())
-                else:
-                    logging.error("Unsupported document type: %s", metad.type_)
-                    continue
-                model = ocr_predictor(pretrained=True)
-                result = model(doc)
-                with get_sync_session().begin() as session:
-                    session.execute(
-                        Document.set_metadata(id_=metad.id_, metadata=result.export())
+                async with os_client_context() as s3:
+                    response = await s3.get_object(
+                        Bucket=get_settings().os_settings.os_bucket,
+                        Key=metad.path,
                     )
+                    data = await response["Body"].read()
+                await get_vector_store().aadd_documents(
+                    [Document(id=metad.id_, page_content=data)]
+                )
+
                 logging.info("Document processed: %s", metad.id_)
 
     finally:
