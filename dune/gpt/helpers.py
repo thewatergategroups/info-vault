@@ -8,33 +8,28 @@ from openai.types.beta.threads import TextDelta, Text
 from .settings import get_assistant, get_oai_client
 
 
-def create_thread():
+async def create_thread():
     """create oai thread"""
-    return get_oai_client().beta.threads.create()
+    return await get_oai_client().beta.threads.create()
 
 
-def delete_thread(thread_id: str):
+async def delete_thread(thread_id: str):
     """create oai thread"""
-    return get_oai_client().beta.threads.delete(thread_id)
+    return await get_oai_client().beta.threads.delete(thread_id)
 
 
-def retrieve_thread(thread_id: str):
+async def retrieve_thread(thread_id: str):
     """create oai thread"""
-    return get_oai_client().beta.threads.retrieve(thread_id)
+    return await get_oai_client().beta.threads.retrieve(thread_id)
 
 
-def add_message(thread_id: str, message: str):
+async def add_message(thread_id: str, message: str):
     """Add message to thread"""
-    return get_oai_client().beta.threads.messages.create(
+    return await get_oai_client().beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
         content=message,
     )
-
-
-def get_messages(thread_id: str):
-    """Fetch thread messages"""
-    return get_oai_client().beta.threads.messages.list(thread_id=thread_id)
 
 
 # Custom event handler that collects output in a queue
@@ -51,12 +46,12 @@ class StreamEventHandler(AssistantEventHandler):
         self.queue.put(delta.value)
 
 
-def stream(thread_id: str):
+async def stream(thread_id: str):
     """
     Stream response with handler
     """
     handler = StreamEventHandler()
-    with get_oai_client().beta.threads.runs.stream(
+    async with get_oai_client().beta.threads.runs.stream(
         thread_id=thread_id,
         assistant_id=get_assistant().id,
         event_handler=handler,

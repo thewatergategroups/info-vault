@@ -12,8 +12,9 @@ from .settings import (
     os_client_context,
     get_settings,
     get_redis_client,
-    get_vector_store,
 )
+from .gpt.settings import get_oai_vector_store
+from .ollama.settings import get_ollama_vector_store
 from .schemas import RedisMessage, RedisMessageType, DocMetadataPayload
 
 
@@ -84,7 +85,8 @@ async def pubsub_listener():
                         docs = PyPDFParser(extract_images=True).parse(blob)
                     else:
                         docs = parser.lazy_parse(blob)
-                    await get_vector_store().aadd_documents(docs)
+                    await get_oai_vector_store().aadd_documents(docs)
+                    await get_ollama_vector_store().aadd_documents(docs)
                 except Exception:
                     logging.exception("failed to process document...")
                 logging.info("Document processed: %s", metad.id_)

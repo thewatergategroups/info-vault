@@ -15,13 +15,13 @@ from ..gpt.helpers import (
     delete_thread,
     retrieve_thread,
 )
-from ..settings import get_vector_store
+from ..settings import get_oai_vector_store
 
 router = APIRouter(prefix="/gpt", tags=["GPT endpoints"])
 
 
 @router.get("/stream")
-def stream_endpoint(thread_id: str):
+async def stream_endpoint(thread_id: str):
     """Stream response from thread"""
     return StreamingResponse(stream(thread_id), media_type="text/plain")
 
@@ -34,7 +34,9 @@ class PostMessage(BaseModel):
 
 
 @router.post("/message")
-async def post_message(body: PostMessage, store: PGVector = Depends(get_vector_store)):
+async def post_message(
+    body: PostMessage, store: PGVector = Depends(get_oai_vector_store)
+):
     """
     send a message
     """
@@ -46,28 +48,28 @@ async def post_message(body: PostMessage, store: PGVector = Depends(get_vector_s
         ["Here is some context:", *context, "Here is the message:", body.message]
     )
 
-    return add_message(body.thread_id, message)
+    return await add_message(body.thread_id, message)
 
 
 @router.post("/thread")
-def post_thread():
+async def post_thread():
     """
     create a thread
     """
-    return create_thread()
+    return await create_thread()
 
 
 @router.delete("/thread")
-def del_thread(thread_id: str):
+async def del_thread(thread_id: str):
     """
     delete thread
     """
-    return delete_thread(thread_id)
+    return await delete_thread(thread_id)
 
 
 @router.get("/thread")
-def get_thread(thread_id: str):
+async def get_thread(thread_id: str):
     """
     get thread info
     """
-    return retrieve_thread(thread_id)
+    return await retrieve_thread(thread_id)
