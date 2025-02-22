@@ -4,7 +4,7 @@
       {
         "label": "Setup Environment",
         "type": "shell",
-        "command": "docker compose up -d && python -m dune db -a upgrade",
+        "command": "docker compose up -d --wait && python -m dune db -a upgrade",
         "problemMatcher": []
       },
       {

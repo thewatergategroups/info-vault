@@ -34,11 +34,11 @@ class PostMessage(BaseModel):
 
 
 @router.post("/message")
-def post_message(body: PostMessage, store: PGVector = Depends(get_vector_store)):
+async def post_message(body: PostMessage, store: PGVector = Depends(get_vector_store)):
     """
     send a message
     """
-    docs: list[Document] = store.search(body.message, "similarity")
+    docs: list[Document] = await store.asimilarity_search(body.message, k=10)
     context = [
         f"document with id: {doc.id} has content {doc.page_content}" for doc in docs
     ]

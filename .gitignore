@@ -7,3 +7,4 @@
 **/pg_data
 **/minio
 **/.vscode
+**/local_pgdata

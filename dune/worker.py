@@ -5,6 +5,9 @@ Worker for object analysis using Redis Pub/Sub
 import asyncio
 import signal
 import logging
+from langchain_core.documents import Document
+from langchain_core.document_loaders import BaseBlobParser, Blob
+from langchain_community.document_loaders.parsers import PyPDFParser
 from .settings import (
     os_client_context,
     get_settings,
@@ -12,7 +15,21 @@ from .settings import (
     get_vector_store,
 )
 from .schemas import RedisMessage, RedisMessageType, DocMetadataPayload
-from langchain_core.documents import Document
+
+
+class DocParser(BaseBlobParser):
+    """Parses PDF's and other data types."""
+
+    def lazy_parse(self, blob: Blob):
+        """Parse a blob into a document line by line."""
+        line_number = 0
+        with blob.as_bytes_io() as f:
+            for line in f:
+                line_number += 1
+                yield Document(
+                    page_content=line,
+                    metadata={"line_number": line_number, "source": blob.source},
+                )
 
 
 async def work():
@@ -38,7 +55,7 @@ async def pubsub_listener():
     """
     channel_name = get_settings().red_settings.subscription_name
     redis_client = get_redis_client()
-
+    parser = DocParser()
     pubsub = redis_client.pubsub()
     await pubsub.subscribe(channel_name)
     logging.info("Subscribed to channel: %s", channel_name)
@@ -59,11 +76,17 @@ async def pubsub_listener():
                         Key=metad.path,
                     )
                     data = await response["Body"].read()
-                await get_vector_store().aadd_documents(
-                    [Document(id=metad.id_, page_content=data)]
-                )
+                logging.info("DEBUG: %s", metad.path)
+                try:
+                    blob = Blob.from_data(data)
 
+                    if "pdf" in metad.path.lower():
+                        docs = PyPDFParser(extract_images=True).parse(blob)
+                    else:
+                        docs = parser.lazy_parse(blob)
+                    await get_vector_store().aadd_documents(docs)
+                except Exception:
+                    logging.exception("failed to process document...")
                 logging.info("Document processed: %s", metad.id_)
-
     finally:
         await pubsub.close()

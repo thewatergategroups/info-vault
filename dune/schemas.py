@@ -15,13 +15,6 @@ class DbActions(StrEnum):
     DOWNGRADE = "downgrade"
 
 
-class DocType(StrEnum):
-    """Document type"""
-
-    JPEG = "image/jpeg"
-    PNG = "image/png"
-
-
 class RedisMessageType(StrEnum):
     """Redis message type"""
 
@@ -45,4 +38,4 @@ class DocMetadataPayload(BaseModel):
 
     id_: UUID
     path: str
-    type_: DocType
+    type_: str

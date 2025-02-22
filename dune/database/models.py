@@ -9,7 +9,6 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert, JSONB
 from sqlmodel import Field, SQLModel
 from pgvector.sqlalchemy import Vector
-from ..schemas import DocType
 
 
 class Embeddings(SQLModel, table=True):
@@ -36,7 +35,7 @@ class Document(SQLModel, table=True):
         return update(cls).where(cls.id_ == id_).values(metad=metadata)
 
     @classmethod
-    def add_document_stmt(cls, id_: UUID, name: str, path: str, type_: DocType):
+    def add_document_stmt(cls, id_: UUID, name: str, path: str, type_: str):
         """Add or update document"""
         stmt = insert(cls).values(
             id_=id_,
@@ -60,7 +59,7 @@ class Document(SQLModel, table=True):
         return delete(cls).where(cls.id_ == id_)
 
     @classmethod
-    def get_documents_stmt(cls, type_: DocType | None = None):
+    def get_documents_stmt(cls, type_: str | None = None):
         """Add or update document"""
         stmt = select(cls)
         if type_:

@@ -26,6 +26,7 @@ def get_vector_store():
         OpenAIEmbeddings(model="text-embedding-3-large"),
         collection_name=collection,
         connection=get_settings().db_settings.url,
+        async_mode=True,
     )
 
 
