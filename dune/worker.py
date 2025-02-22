@@ -13,8 +13,7 @@ from .settings import (
     get_settings,
     get_redis_client,
 )
-from .gpt.settings import get_oai_vector_store
-from .ollama.settings import get_ollama_vector_store
+from .settings import get_oai_vector_store, get_ollama_vector_store
 from .schemas import RedisMessage, RedisMessageType, DocMetadataPayload
 
 

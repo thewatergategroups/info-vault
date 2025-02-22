@@ -6,11 +6,8 @@ https://ollama.com/blog/embedding-models
 from enum import StrEnum
 from functools import lru_cache
 import logging
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_postgres import PGVector
+from langchain_ollama import ChatOllama
 from pydantic_settings import BaseSettings
-
-from ..settings import get_settings
 
 
 class OllamaModel(StrEnum):
@@ -54,18 +51,3 @@ def get_ollama_client():
     settings = get_ollama_settings()
     logging.info("settings %s", settings)
     return ChatOllama(model=settings.ollama_model, base_url=settings.ollama_url)
-
-
-@lru_cache
-def get_ollama_vector_store():
-    """get pgvector settings"""
-    collection = "documents"
-    return PGVector(
-        OllamaEmbeddings(
-            model=get_ollama_settings().ollama_model.value,
-            base_url=get_ollama_settings().ollama_url,
-        ),
-        collection_name=collection,
-        connection=get_settings().db_settings.url,
-        async_mode=True,
-    )

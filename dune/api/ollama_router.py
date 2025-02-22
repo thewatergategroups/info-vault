@@ -9,7 +9,7 @@ from langchain_postgres import PGVector
 from langchain_core.documents import Document
 
 from ..ollama.helpers import stream
-from ..ollama.settings import get_ollama_vector_store
+from ..settings import get_ollama_vector_store
 
 
 router = APIRouter(prefix="/ollama", tags=["Ollama endpoints"])
@@ -21,7 +21,7 @@ class PostMessage(BaseModel):
     message: str
 
 
-@router.get("/stream")
+@router.post("/stream")
 async def stream_endpoint(
     body: PostMessage, store: PGVector = Depends(get_ollama_vector_store)
 ):

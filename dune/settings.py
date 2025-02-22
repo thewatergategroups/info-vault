@@ -17,6 +17,7 @@ from langchain_postgres import PGVector
 from langchain_ollama import OllamaEmbeddings
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 from .ollama.settings import get_ollama_settings
+from .gpt.settings import get_oai_settings
 
 
 @lru_cache
@@ -24,7 +25,7 @@ def get_oai_vector_store():
     """get pgvector settings"""
     collection = "documents"
     return PGVector(
-        OpenAIEmbeddings(model="text-embedding-3-large"),
+        OpenAIEmbeddings(model=get_oai_settings().openai_embedding_model.value),
         collection_name=collection,
         connection=get_settings().db_settings.url,
         async_mode=True,
@@ -37,7 +38,7 @@ def get_ollama_vector_store():
     collection = "documents"
     return PGVector(
         OllamaEmbeddings(
-            model=get_ollama_settings().ollama_model,
+            model=get_ollama_settings().ollama_embeddings_model.value,
             base_url=get_ollama_settings().ollama_url,
         ),
         collection_name=collection,
