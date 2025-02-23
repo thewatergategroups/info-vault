@@ -23,7 +23,7 @@ from .gpt.settings import get_oai_settings
 @lru_cache
 def get_oai_vector_store():
     """get pgvector settings"""
-    collection = "documents"
+    collection = "documents-openai"
     return PGVector(
         OpenAIEmbeddings(model=get_oai_settings().openai_embedding_model.value),
         collection_name=collection,
@@ -35,7 +35,7 @@ def get_oai_vector_store():
 @lru_cache
 def get_ollama_vector_store():
     """get pgvector settings"""
-    collection = "documents"
+    collection = "documents-ollama"
     return PGVector(
         OllamaEmbeddings(
             model=get_ollama_settings().ollama_embeddings_model.value,

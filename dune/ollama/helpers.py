@@ -10,4 +10,4 @@ async def stream(message: str):
     Stream response with handler
     """
     async for chunk in get_ollama_client().astream(message):
-        yield chunk
+        yield chunk.content

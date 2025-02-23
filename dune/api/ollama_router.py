@@ -33,4 +33,4 @@ async def stream_endpoint(
     message = "\n".join(
         ["Here is some context:", *context, "Here is the message:", body.message]
     )
-    return StreamingResponse(await stream(message), media_type="text/plain")
+    return StreamingResponse(stream(message), media_type="text/plain")
