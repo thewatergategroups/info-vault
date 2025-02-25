@@ -5,12 +5,10 @@ Entrypoint to the application
 import asyncio
 import typer
 import uvicorn
-
 from .database.config import run_downgrade, run_upgrade
 from .schemas import DbActions
 from .settings import get_settings, setup_logging
 from .worker import work
-
 
 app = typer.Typer()
 

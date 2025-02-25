@@ -50,4 +50,6 @@ def get_ollama_client():
     """Get OpenAI client"""
     settings = get_ollama_settings()
     logging.info("settings %s", settings)
-    return ChatOllama(model=settings.ollama_model, base_url=settings.ollama_url)
+    return ChatOllama(
+        model=settings.ollama_model, base_url=settings.ollama_url,
+    )

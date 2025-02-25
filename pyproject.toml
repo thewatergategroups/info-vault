@@ -26,6 +26,8 @@ dependencies = [
     "pillow>=11.1.0",
     "rapidocr-onnxruntime>=1.4.4",
     "langchain-ollama>=0.2.3",
+    "unstructured[all-docs]>=0.14.8",
+    "streamlit>=1.42.2",
 ]
 
 [dependency-groups]
