@@ -1,27 +1,25 @@
-FROM python:3.12-slim-bookworm AS base_requirements
+FROM python:3.12-slim-bookworm AS requirements
 WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY pyproject.toml uv.lock ./
-
-FROM base_requirements AS requirements
-RUN uv sync --frozen --no-dev
-
-FROM requirements AS dev_requirements
-RUN uv sync --frozen
+RUN apt update \ 
+    && apt install build-essential -y  \ 
+    && uv sync --frozen --no-dev
 
 FROM python:3.12-slim-bookworm AS base
 RUN groupadd app && useradd -g app --home-dir /app --create-home app
 WORKDIR /app
 ENV PATH="/app/.venv/bin:$PATH"
-COPY  ./scripts/start.sh ./
-COPY ./dp ./dp
-RUN apt update && apt install libpq-dev -yy
+RUN apt update && apt install libpq-dev  \
+    libmagic-dev \
+    poppler-utils \
+    tesseract-ocr \
+    qpdf \
+    libreoffice \
+    pandoc -y
 RUN chown -R app /app && chmod -R 700 /app
-USER app
-ENTRYPOINT ["bash","start.sh"]
-
-FROM base AS development
-COPY --from=dev_requirements /app/.venv /app/.venv
 
 FROM base AS production
 COPY --from=requirements /app/.venv /app/.venv
+COPY ./dune ./dune
+USER app

@@ -5,10 +5,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+    networks:
+      - dune_network
     ports:
       - 5432:5432
     volumes:
-      - ./local_pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
@@ -22,11 +24,13 @@ services:
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: ec7a5f23655bfee156f12076d1a3
+    networks:
+      - dune_network
     ports:
       - 9000:9000
       - 9001:9001
     volumes:
-      - ./minio/data:/data
+      - minio_data:/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
       interval: 10s
@@ -38,8 +42,17 @@ services:
     image: redis:6
     ports:
       - 6379:6379
+    networks:
+      - dune_network
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping"]
       interval: 10s
       timeout: 3s
       retries: 3
+
+networks:
+  dune_network: {}
+
+volumes:
+  pgdata:
+  minio_data:

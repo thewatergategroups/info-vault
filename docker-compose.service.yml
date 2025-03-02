@@ -1,0 +1,44 @@
+services:
+  api:
+    image: ghcr.io/thewatergategroups/dune:latest 
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+    entrypoint: python -m dune api
+    volumes:
+      - ./dune:/app/dune
+    ports:
+      - 8000:8000
+    networks:
+      - dune_network
+    env_file:
+      - .env.template
+  worker:
+    image: ghcr.io/thewatergategroups/dune:latest 
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+    entrypoint: python -m dune worker
+    volumes:
+      - ./dune:/app/dune
+    networks:
+      - dune_network
+    env_file:
+      - .env.template
+  dbsetup:
+    image: ghcr.io/thewatergategroups/dune:latest 
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+    entrypoint: python -m dune db -a upgrade
+    volumes:
+      - ./dune:/app/dune
+    networks:
+      - dune_network
+    env_file:
+      - .env.template
+networks:
+  dune_network: {}

@@ -5,6 +5,8 @@ Worker for object analysis using Redis Pub/Sub
 import asyncio
 import signal
 import logging
+
+import openai
 from .settings import (
     get_oai_vector_store,
     get_ollama_vector_store,
@@ -52,13 +54,16 @@ async def pubsub_listener():
                 metad = DocMetadataPayload.model_validate_json(
                     message_model.data.decode("utf-8")
                 )
+                loader = get_s3_file_loader(metad.path)
+                documents = await loader.aload()
                 try:
-                    loader = get_s3_file_loader(metad.path)
-                    documents = await loader.aload()
                     await get_oai_vector_store().aadd_documents(documents)
+                except openai.AuthenticationError:
+                    logging.warning("OpenAi not authenticated, supressing...")
+                try:
                     await get_ollama_vector_store().aadd_documents(documents)
                 except Exception:
-                    logging.exception("failed to process document...")
+                    logging.exception("Failed to add ollama docs")
                 logging.info("Document processed: %s", metad.id_)
     finally:
         await pubsub.close()

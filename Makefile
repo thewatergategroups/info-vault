@@ -1,4 +1,4 @@
-REPOSITORY := dp
+REPOSITORY := dune
 SHELL := /bin/bash
 
 build:
@@ -9,14 +9,14 @@ build:
 	. 
 
 up: 
-	docker compose up -d --remove-orphans
-	docker compose logs -f 
+	docker compose -f docker-compose.yml -f docker-compose.service.yml up -d --remove-orphans
+	docker compose -f docker-compose.yml -f docker-compose.service.yml logs -f 
 
 debug:
 	docker run -it ghcr.io/thewatergategroups/$(REPOSITORY) bash
 
 down: 
-	docker compose down
+	docker compose -f docker-compose.yml -f docker-compose.service.yml down
 
 push: build
 	docker push ghcr.io/thewatergategroups/$(REPOSITORY):latest
