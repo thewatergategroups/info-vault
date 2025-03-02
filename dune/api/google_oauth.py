@@ -4,7 +4,7 @@ google oauth2 router
 
 import logging
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse
 from ..settings import (
     get_redis_client,
 )
@@ -39,7 +39,7 @@ async def oauth2callback(code: str):
         get_google_settings().google_token_key,
         get_google_flow().credentials.to_json(),
     )
-    return HTMLResponse("Authorization successful. You can close this window.")
+    return RedirectResponse("http://localhost:5173")
 
 
 # Example endpoint to demonstrate usage of get_client()
