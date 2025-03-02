@@ -9,6 +9,8 @@ from .database.config import run_downgrade, run_upgrade
 from .schemas import DbActions
 from .settings import get_settings, setup_logging
 from .worker import work
+from .google.gmail import fetch_emails
+from .google.drive import enumerate_drive_files
 
 app = typer.Typer()
 
@@ -29,6 +31,18 @@ def api():
 def worker():
     """Worker for processing data"""
     asyncio.run(work())
+
+
+@app.command()
+def gmail():
+    """Worker for processing data"""
+    asyncio.run(fetch_emails())
+
+
+@app.command()
+def drive():
+    """Worker for processing data"""
+    asyncio.run(enumerate_drive_files())
 
 
 @app.command()

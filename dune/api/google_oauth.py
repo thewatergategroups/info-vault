@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from ..settings import (
     get_redis_client,
+)
+from ..google.settings import (
     get_google_flow,
     get_google_settings,
     get_google_client,
