@@ -27,6 +27,34 @@ services:
       - dune_network
     env_file:
       - .env.template
+  
+  gmail:
+    image: ghcr.io/thewatergategroups/dune:latest 
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+    entrypoint: python -m dune gmail
+    volumes:
+      - ./dune:/app/dune
+    networks:
+      - dune_network
+    env_file:
+      - .env.template
+  drive:
+    image: ghcr.io/thewatergategroups/dune:latest 
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: production
+    entrypoint: python -m dune drive
+    volumes:
+      - ./dune:/app/dune
+    networks:
+      - dune_network
+    env_file:
+      - .env.template
+      
   dbsetup:
     image: ghcr.io/thewatergategroups/dune:latest 
     build:

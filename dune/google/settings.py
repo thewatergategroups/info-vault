@@ -71,8 +71,8 @@ class GmailFetchSettings(BaseSettings):
 
     excluded_extensions: list[str] = [".exe", ".bat", ".ics"]
     max_results_per_page: int = 500
-    fetch_limit: int = -1  # Set to -1 for unlimited processing
-    api_uri: str = "http://localhost:8000"
+    fetch_limit: int = 10000  # Set to -1 for unlimited processing
+    api_uri: str = "http://api:8000"
     max_concurrent_emails: int = 20
 
 
@@ -91,7 +91,7 @@ class DriveFetchSettings(BaseSettings):
     query: str = (
         "'me' in owners and mimeType!='application/vnd.google-apps.folder' and trashed=false"
     )
-    api_uri: str = "http://localhost:8000"
+    api_uri: str = "http://api:8000"
 
 
 @lru_cache

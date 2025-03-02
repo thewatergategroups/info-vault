@@ -3,6 +3,9 @@ Entrypoint to the application
 """
 
 import asyncio
+from datetime import datetime, timedelta
+import logging
+from time import sleep
 import typer
 import uvicorn
 from .database.config import run_downgrade, run_upgrade
@@ -36,13 +39,31 @@ def worker():
 @app.command()
 def gmail():
     """Worker for processing data"""
+    ne = datetime.now() + timedelta(hours=12)
     asyncio.run(fetch_emails())
+    while True:
+        if datetime.now() < ne:
+            logging.info("skipping until %s", ne)
+            sleep(3600)
+            continue
+        ne = datetime.now() + timedelta(hours=12)
+        logging.info("fetching emails")
+        asyncio.run(fetch_emails())
 
 
 @app.command()
 def drive():
     """Worker for processing data"""
+    ne = datetime.now() + timedelta(hours=12)
     asyncio.run(enumerate_drive_files())
+    while True:
+        if datetime.now() < ne:
+            logging.info("skipping until %s", ne)
+            sleep(3600)
+            continue
+        ne = datetime.now() + timedelta(hours=12)
+        logging.info("fetching from drive")
+        asyncio.run(enumerate_drive_files())
 
 
 @app.command()
