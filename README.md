@@ -9,3 +9,6 @@
 - https://docs.streamlit.io/develop/tutorials/chat-and-llm-apps/build-conversational-apps
 ### Todos
 1. docx, xslx formats 
+
+
+DO `python -m nltk.downloader all` during docker build

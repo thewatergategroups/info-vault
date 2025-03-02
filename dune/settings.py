@@ -15,6 +15,8 @@ from redis.asyncio import Redis
 from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_ollama import OllamaEmbeddings
+from langchain_community.document_loaders import S3FileLoader
+from botocore.exceptions import ClientError
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 from .ollama.settings import get_ollama_settings
 from .gpt.settings import get_oai_settings
@@ -105,10 +107,29 @@ async def get_os_client():
         aws_access_key_id=settings.os_settings.os_access_key,
         aws_secret_access_key=settings.os_settings.os_secret_key,
     ) as s3:
+        try:
+            await s3.head_bucket(Bucket=settings.os_settings.os_bucket)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                await s3.create_bucket(Bucket=settings.os_settings.os_bucket)
         yield s3
 
 
 os_client_context = asynccontextmanager(get_os_client)
+
+
+@lru_cache
+def get_s3_file_loader(filepath: str):
+    """return s3 file loader"""
+    settings = get_settings()
+    return S3FileLoader(
+        bucket=settings.os_settings.os_bucket,
+        key=filepath,
+        region_name=settings.os_settings.os_region,
+        endpoint_url=settings.os_settings.os_endpoint,
+        aws_access_key_id=settings.os_settings.os_access_key,
+        aws_secret_access_key=settings.os_settings.os_secret_key,
+    )
 
 
 def setup_logging():

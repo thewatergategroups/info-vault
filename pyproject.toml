@@ -28,6 +28,7 @@ dependencies = [
     "langchain-ollama>=0.2.3",
     "unstructured[all-docs]>=0.14.8",
     "streamlit>=1.42.2",
+    "nltk[punkt_tab]>=3.9.1",
 ]
 
 [dependency-groups]
