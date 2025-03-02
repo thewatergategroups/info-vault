@@ -3,12 +3,18 @@ Application Settings
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 import logging
 import os
 import pathlib
+import json
 import sys
 from functools import lru_cache
+from google_auth_oauthlib.flow import Flow
+from google.auth.transport.requests import Request as GoogleRequest
 
+from google.oauth2.credentials import Credentials
+from google.auth.credentials import TokenState
 import aioboto3
 from pydantic_settings import BaseSettings
 from redis.asyncio import Redis
@@ -20,6 +26,58 @@ from botocore.exceptions import ClientError
 from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
 from .ollama.settings import get_ollama_settings
 from .gpt.settings import get_oai_settings
+
+
+class GoogleAuthSettings(BaseSettings):
+    """Google auth settings"""
+
+    google_scopes: list[str] = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/drive.readonly",
+    ]
+    google_redirect_url: str = "http://localhost:8000/google/redirect"
+    google_credentials_filepath: str = "./credentials.json"
+    google_token_key: str = "google_oauth_token"
+
+
+@lru_cache
+def get_google_settings():
+    """Return google settings object"""
+    return GoogleAuthSettings()
+
+
+async def get_google_client() -> Credentials:
+    """
+    Retrieves the OAuth2 token from Redis and returns Google credentials.
+    If the token is expired and a refresh token is available, it refreshes the token.
+    If no token is found, an exception is raised.
+    """
+    token_json = await get_redis_client().get(get_google_settings().google_token_key)
+    if not token_json:
+        raise Exception("No token found. Please login via the /login endpoint.")
+    credentials = Credentials(**json.loads(token_json))
+    credentials.expiry = datetime.fromisoformat(credentials.expiry).replace(tzinfo=None)
+    if (
+        credentials.token_state in (TokenState.INVALID, TokenState.STALE)
+        and credentials.refresh_token
+    ):
+        credentials.refresh(GoogleRequest())
+        await get_redis_client().set(
+            get_google_settings().google_token_key, credentials.to_json()
+        )
+
+    return credentials
+
+
+@lru_cache
+def get_google_flow():
+    """Get authorized google client"""
+    settings = get_google_settings()
+    return Flow.from_client_secrets_file(
+        settings.google_credentials_filepath,
+        scopes=settings.google_scopes,
+        redirect_uri=settings.google_redirect_url,
+    )
 
 
 @lru_cache

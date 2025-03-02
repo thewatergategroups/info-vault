@@ -29,6 +29,8 @@ dependencies = [
     "unstructured[all-docs]>=0.14.8",
     "streamlit>=1.42.2",
     "nltk>=3.9.1",
+    "google-auth-oauthlib>=1.2.1",
+    "google-auth>=2.38.0",
 ]
 
 [dependency-groups]

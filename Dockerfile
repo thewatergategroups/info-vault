@@ -22,4 +22,5 @@ RUN chown -R app /app && chmod -R 700 /app
 FROM base AS production
 COPY --from=requirements /app/.venv /app/.venv
 COPY ./dune ./dune
+COPY ./credentials.json ./credentials.json
 USER app

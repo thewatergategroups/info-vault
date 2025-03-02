@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from .doc_router import router as docrouter
 from .gpt_router import router as gptrouter
 from .ollama_router import router as ollamarouter
+from .google_oauth import router as googlerouter
 
 
 def create_app() -> FastAPI:
@@ -18,8 +19,8 @@ def create_app() -> FastAPI:
         description="Parses Documents",
         version="1.0",
     )
-    app.include_router(docrouter)
-    app.include_router(gptrouter)
-    app.include_router(ollamarouter)
+    routers = [googlerouter, docrouter, ollamarouter, gptrouter]
+    for router in routers:
+        app.include_router(router)
 
     return app

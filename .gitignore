@@ -7,4 +7,5 @@
 **/pg_data
 **/minio
 **/.vscode
-**/local_pgdata
+**/local_pgdata]
+**/credentials.json
