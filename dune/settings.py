@@ -68,6 +68,20 @@ class RedisSettings(BaseSettings):
     redis_db: int
 
 
+class UserSettings(BaseSettings):
+    """User settings"""
+
+    user_pw_secret: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+
+@lru_cache
+def get_user_settings():
+    """Get user settings"""
+    return UserSettings()
+
+
 class Settings(BaseSettings):
     """Application Settings"""
 

@@ -10,7 +10,6 @@ dependencies = [
     "psycopg>=3.2.4",
     "pydantic>=2.10.5",
     "pydantic-settings>=2.7.1",
-    "sqlmodel>=0.0.22",
     "typer>=0.15.1",
     "uvicorn>=0.34.0",
     "greenlet>=3.1.1",
@@ -32,6 +31,8 @@ dependencies = [
     "google-auth-oauthlib>=1.2.1",
     "google-auth>=2.38.0",
     "google-api-python-client>=2.162.0",
+    "fastapi-users[sqlalchemy,oauth]>=14.0.1",
+    "sqlalchemy>=2.0.38",
 ]
 
 [dependency-groups]

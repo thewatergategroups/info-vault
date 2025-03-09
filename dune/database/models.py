@@ -6,28 +6,48 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
-from sqlmodel import Field, SQLModel
-from pgvector.sqlalchemy import Vector
+
+from fastapi_users.db import (
+    SQLAlchemyBaseUserTableUUID,
+    SQLAlchemyBaseOAuthAccountTableUUID,
+)
+from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTableUUID
 
 
-class Embeddings(SQLModel, table=True):
-    """Vector embeddings"""
-
-    id_: int = Field(primary_key=True)
-    vector: list[float] = Field(sa_type=Vector)
+class BaseSql(DeclarativeBase):
+    """base of models"""
 
 
-class Document(SQLModel, table=True):
+class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, BaseSql):
+    """Storing access tokens in the database"""
+
+
+class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, BaseSql):
+    """OAuth account Model"""
+
+
+class User(SQLAlchemyBaseUserTableUUID, BaseSql):
+    """User table"""
+
+    oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
+        "OAuthAccount", lazy="joined"
+    )
+
+
+class DocumentModel(BaseSql):
     """Document table definition"""
 
-    id_: UUID = Field(primary_key=True)
-    name: str
-    path: str
-    type_: str
-    metad: dict | None = Field(sa_type=JSONB, default=None)
-    created_at: datetime = Field(default=datetime.now(timezone.utc))
-    modified_at: datetime = Field(default=datetime.now(timezone.utc))
+    __tablename__ = "documents"
+
+    id_: Mapped[UUID] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    path: Mapped[str]
+    type_: Mapped[str]
+    metad: Mapped[dict | None] = mapped_column(type_=JSONB, default=None)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
+    modified_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
 
     @classmethod
     def set_metadata(cls, id_: UUID, metadata: dict):

@@ -10,10 +10,13 @@ from alembic import command, context
 from alembic.config import Config
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
-from sqlalchemy import (Engine, MetaData, create_engine, engine_from_config,
-                        pool, text)
-from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
-                                    async_sessionmaker, create_async_engine)
+from sqlalchemy import Engine, MetaData, create_engine, engine_from_config, pool, text
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import Session, sessionmaker
 
 from .helpers import custom_json_encoder
@@ -100,7 +103,7 @@ def get_sync_engine(settings: DbSettings):
     global _SYNC_ENGINE
     if _SYNC_ENGINE is None:
         config = settings.db_config
-        _SYNC_ENGINE = create_engine(**config.dict())
+        _SYNC_ENGINE = create_engine(**config.model_dump())
     return _SYNC_ENGINE
 
 
@@ -116,7 +119,7 @@ def get_async_engine(settings: DbSettings):
     global _ASYNC_ENGINE
     if _ASYNC_ENGINE is None:
         config = settings.db_config
-        _ASYNC_ENGINE = create_async_engine(**config.dict())
+        _ASYNC_ENGINE = create_async_engine(**config.model_dump())
     return _ASYNC_ENGINE
 
 
@@ -124,7 +127,7 @@ def get_async_sessionmaker(settings: DbSettings):
     global _ASYNC_SESSION
     if _ASYNC_SESSION is None:
         engine = get_async_engine(settings)
-        _ASYNC_SESSION = async_sessionmaker(bind=engine)
+        _ASYNC_SESSION = async_sessionmaker(bind=engine, expire_on_commit=False)
     return _ASYNC_SESSION
 
 

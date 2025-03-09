@@ -12,7 +12,7 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..schemas import DocMetadataPayload
-from ..database.models import Document
+from ..database.models import DocumentModel
 from ..settings import get_async_session, get_redis_client, get_os_client, get_settings
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.get("")
 async def list_documents(
-    stmt: Select = Depends(Document.get_documents_stmt),
+    stmt: Select = Depends(DocumentModel.get_documents_stmt),
     session: AsyncSession = Depends(get_async_session),
 ):
     """Get existing documents"""
@@ -36,7 +36,7 @@ async def check_document_exists(
     session: AsyncSession = Depends(get_async_session),
 ):
     """Get existing documents"""
-    return (await session.scalars(Document.get_document_name_stmt(filename))).all()
+    return (await session.scalars(DocumentModel.get_document_name_stmt(filename))).all()
 
 
 @router.get("/document/presigned-url")
@@ -48,7 +48,7 @@ async def generate_presigned_url(
     """
     Generate a presigned URL for accessing an object in the browser.
     """
-    item = await session.scalar(Document.get_document_stmt(id_))
+    item = await session.scalar(DocumentModel.get_document_stmt(id_))
     if not item:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -72,7 +72,7 @@ async def download_document(
     """
     Download an object from MinIO.
     """
-    document = await session.scalar(Document.get_document_stmt(id_))
+    document = await session.scalar(DocumentModel.get_document_stmt(id_))
     if not document:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -104,7 +104,7 @@ async def add_document(
         ContentType=file.content_type,
     )
     await session.execute(
-        Document.add_document_stmt(id_, file.filename, path, file.content_type)
+        DocumentModel.add_document_stmt(id_, file.filename, path, file.content_type)
     )
     await red.publish(
         get_settings().red_settings.subscription_name,
@@ -123,7 +123,7 @@ async def delete_document(
 ):
     """add new document"""
     path: str | None = await session.scalar(
-        Document.delete_document_stmt(id_).returning(Document.path)
+        DocumentModel.delete_document_stmt(id_).returning(DocumentModel.path)
     )
     if not path:
         raise HTTPException(404, "Object not found")
