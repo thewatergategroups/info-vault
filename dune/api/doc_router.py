@@ -8,25 +8,28 @@ from uuid import UUID, uuid4
 from redis.asyncio import Redis
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
-from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from ..schemas import DocMetadataPayload
-from ..database.models import DocumentModel
+from ..database.models import DocumentModel, User
 from ..settings import get_async_session, get_redis_client, get_os_client, get_settings
+from .users import current_active_user
 
 if TYPE_CHECKING:
     from types_aiobotocore_s3 import S3Client
 
-router = APIRouter(prefix="/documents", tags=["documents"])
+router = APIRouter(
+    prefix="/documents", tags=["documents"], dependencies=[Depends(current_active_user)]
+)
 
 
 @router.get("")
 async def list_documents(
-    stmt: Select = Depends(DocumentModel.get_documents_stmt),
+    type_: str | None = None,
     session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user),
 ):
     """Get existing documents"""
+    stmt = DocumentModel.get_documents_stmt(user.id, type_)
     return (await session.scalars(stmt)).all()
 
 
@@ -34,9 +37,12 @@ async def list_documents(
 async def check_document_exists(
     filename: str,
     session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user),
 ):
     """Get existing documents"""
-    return (await session.scalars(DocumentModel.get_document_name_stmt(filename))).all()
+    return (
+        await session.scalars(DocumentModel.get_document_name_stmt(user.id, filename))
+    ).all()
 
 
 @router.get("/document/presigned-url")
@@ -44,11 +50,12 @@ async def generate_presigned_url(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
     client: "S3Client" = Depends(get_os_client),
+    user: User = Depends(current_active_user),
 ):
     """
     Generate a presigned URL for accessing an object in the browser.
     """
-    item = await session.scalar(DocumentModel.get_document_stmt(id_))
+    item = await session.scalar(DocumentModel.get_document_stmt(user.id, id_))
     if not item:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -68,11 +75,12 @@ async def download_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
     client: "S3Client" = Depends(get_os_client),
+    user: User = Depends(current_active_user),
 ):
     """
     Download an object from MinIO.
     """
-    document = await session.scalar(DocumentModel.get_document_stmt(id_))
+    document = await session.scalar(DocumentModel.get_document_stmt(user.id, id_))
     if not document:
         raise HTTPException(status_code=404, detail="Object not found")
 
@@ -93,6 +101,7 @@ async def add_document(
     session: AsyncSession = Depends(get_async_session),
     client: "S3Client" = Depends(get_os_client),
     red: Redis = Depends(get_redis_client),
+    user: User = Depends(current_active_user),
 ):
     """add new document"""
     id_ = uuid4()
@@ -104,7 +113,9 @@ async def add_document(
         ContentType=file.content_type,
     )
     await session.execute(
-        DocumentModel.add_document_stmt(id_, file.filename, path, file.content_type)
+        DocumentModel.add_document_stmt(
+            user.id, id_, file.filename, path, file.content_type
+        )
     )
     await red.publish(
         get_settings().red_settings.subscription_name,
@@ -120,10 +131,11 @@ async def delete_document(
     id_: UUID,
     session: AsyncSession = Depends(get_async_session),
     client: "S3Client" = Depends(get_os_client),
+    user: User = Depends(current_active_user),
 ):
     """add new document"""
     path: str | None = await session.scalar(
-        DocumentModel.delete_document_stmt(id_).returning(DocumentModel.path)
+        DocumentModel.delete_document_stmt(user.id, id_).returning(DocumentModel.path)
     )
     if not path:
         raise HTTPException(404, "Object not found")

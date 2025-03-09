@@ -16,8 +16,11 @@ from ..gpt.helpers import (
     retrieve_thread,
 )
 from ..settings import get_oai_vector_store
+from .users import current_active_user
 
-router = APIRouter(prefix="/gpt", tags=["GPT endpoints"])
+router = APIRouter(
+    prefix="/gpt", tags=["GPT endpoints"], dependencies=[Depends(current_active_user)]
+)
 
 
 @router.get("/stream")

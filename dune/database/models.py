@@ -5,7 +5,7 @@ Postgres Database table definitions
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, update, ForeignKey
 from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
@@ -40,7 +40,9 @@ class DocumentModel(BaseSql):
     """Document table definition"""
 
     __tablename__ = "documents"
-
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(User.id, ondelete="CASCADE"), unique=True
+    )
     id_: Mapped[UUID] = mapped_column(primary_key=True)
     name: Mapped[str]
     path: Mapped[str]
@@ -50,14 +52,19 @@ class DocumentModel(BaseSql):
     modified_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc))
 
     @classmethod
-    def set_metadata(cls, id_: UUID, metadata: dict):
+    def set_metadata(cls, user_id: UUID, id_: UUID, metadata: dict):
         """Add or update document"""
-        return update(cls).where(cls.id_ == id_).values(metad=metadata)
+        return (
+            update_for_user(user_id, cls).where(cls.id_ == id_).values(metad=metadata)
+        )
 
     @classmethod
-    def add_document_stmt(cls, id_: UUID, name: str, path: str, type_: str):
+    def add_document_stmt(
+        cls, user_id: UUID, id_: UUID, name: str, path: str, type_: str
+    ):
         """Add or update document"""
         stmt = insert(cls).values(
+            user_id=user_id,
             id_=id_,
             name=name,
             path=path,
@@ -74,24 +81,42 @@ class DocumentModel(BaseSql):
         )
 
     @classmethod
-    def delete_document_stmt(cls, id_: UUID):
+    def delete_document_stmt(cls, user_id: UUID, id_: UUID):
         """Add or update document"""
-        return delete(cls).where(cls.id_ == id_)
+        return delete_for_user(user_id, cls).where(cls.id_ == id_)
 
     @classmethod
-    def get_documents_stmt(cls, type_: str | None = None):
+    def get_documents_stmt(cls, user_id: UUID, type_: str | None = None):
         """Add or update document"""
-        stmt = select(cls)
+        stmt = select_for_user(user_id, cls)
         if type_:
             stmt = stmt.where(cls.type_ == type_)
         return stmt
 
     @classmethod
-    def get_document_stmt(cls, id_: str):
+    def get_document_stmt(cls, user_id: UUID, id_: UUID):
         """Add or update document"""
-        return select(cls).where(cls.id_ == id_)
+        return select_for_user(user_id, cls).where(cls.id_ == id_)
 
     @classmethod
-    def get_document_name_stmt(cls, name: str):
+    def get_document_name_stmt(cls, user_id: UUID, name: str):
         """Add or update document"""
-        return select(cls).where(cls.name == name)
+        return select_for_user(user_id, cls).where(cls.name == name)
+
+
+OwnedModel = type[DocumentModel]
+
+
+def select_for_user(user_id: UUID, model: OwnedModel):
+    """select with user"""
+    return select(model).where(model.user_id == user_id)
+
+
+def delete_for_user(user_id: UUID, model: OwnedModel):
+    """select with user"""
+    return delete(model).where(model.user_id == user_id)
+
+
+def update_for_user(user_id: UUID, model: OwnedModel):
+    """select with user"""
+    return update(model).where(model.user_id == user_id)

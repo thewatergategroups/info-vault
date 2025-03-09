@@ -11,8 +11,13 @@ from langchain_core.documents import Document
 from ..ollama.helpers import stream
 from ..settings import get_ollama_vector_store
 
+from .users import current_active_user
 
-router = APIRouter(prefix="/ollama", tags=["Ollama endpoints"])
+router = APIRouter(
+    prefix="/ollama",
+    tags=["Ollama endpoints"],
+    dependencies=[Depends(current_active_user)],
+)
 
 
 class PostMessage(BaseModel):
