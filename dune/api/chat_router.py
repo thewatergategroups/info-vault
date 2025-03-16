@@ -79,10 +79,13 @@ async def get_history(
     conn = await get_psycopg_conn()
     session = PostgresChatMessageHistory(
         get_settings().db_settings.chat_history_table_name,
-        session_id,
+        str(session_id),
         async_connection=conn,
     )
-    return await session.aget_messages()
+    return [
+        {"content": item.content, "type": item.type}
+        for item in await session.aget_messages()
+    ]
 
 
 @router.get("/session")
