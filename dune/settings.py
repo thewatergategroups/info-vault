@@ -2,13 +2,14 @@
 Application Settings
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 import logging
 import os
 import pathlib
 import sys
 from functools import lru_cache
-
+import psycopg
 import aioboto3
 from pydantic_settings import BaseSettings
 from redis.asyncio import Redis
@@ -16,8 +17,15 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.document_loaders import S3FileLoader
+from langchain_postgres.chat_message_histories import PostgresChatMessageHistory
+
+
 from botocore.exceptions import ClientError
-from .database.config import DbSettings, get_async_sessionmaker, get_sync_sessionmaker
+from .database.config import (
+    DbSettings,
+    get_async_sessionmaker,
+    get_sync_sessionmaker,
+)
 from .ollama.settings import get_ollama_settings
 from .gpt.settings import get_oai_settings
 
@@ -190,3 +198,11 @@ def get_sync_session():
     goes out of scope and closes connection at the end of endpoint execution
     """
     return get_sync_sessionmaker(get_settings().db_settings)
+
+
+async def get_psycopg_conn():
+    """get psycopg table"""
+    settings = get_settings().db_settings
+    return await psycopg.AsyncConnection.connect(
+        settings.url.replace("postgresql+psycopg", "postgresql")
+    )

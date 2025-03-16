@@ -35,6 +35,7 @@ class DbSettings(BaseSettings):
     pguser: str = ""
     db_schema: str = ""
     env_script_location: str = ""
+    chat_history_table_name: str = "chat_history"
 
     @property
     def url(self):
@@ -120,6 +121,7 @@ def get_async_engine(settings: DbSettings):
     if _ASYNC_ENGINE is None:
         config = settings.db_config
         _ASYNC_ENGINE = create_async_engine(**config.model_dump())
+        _ASYNC_ENGINE
     return _ASYNC_ENGINE
 
 

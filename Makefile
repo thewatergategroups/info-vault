@@ -23,5 +23,5 @@ push: build
 
 migrate:
 	docker compose up -d --remove-orphans
-	python -m alembic revision --autogenerate -m $(m)
+	python -m alembic revision --autogenerate -m "$(m)"
 	docker compose down

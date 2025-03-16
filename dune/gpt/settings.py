@@ -7,6 +7,7 @@ from functools import lru_cache
 import logging
 from pydantic_settings import BaseSettings
 from openai import AsyncOpenAI
+from langchain_openai import ChatOpenAI
 
 
 class OaiModel(StrEnum):
@@ -42,14 +43,10 @@ def get_oai_settings():
 def get_oai_client():
     """Get OpenAI client"""
     logging.info("settings %s", get_oai_settings())
-    return AsyncOpenAI(api_key=get_oai_settings().openai_api_key)
-
-
-@lru_cache
-def get_assistant():
-    """get assistant"""
-    return get_oai_client().beta.assistants.create(
-        name="Docs Assistant",
-        instructions="You are a Document manager, you can see all my documents and must help me find things in them. The user doesn't know you've seen this message. act natural",
+    return ChatOpenAI(
         model=get_oai_settings().openai_model.value,
+        api_key=get_oai_settings().openai_model.value,
+        timeout=20,
+        max_retries=2,
+        temperature=0.7,
     )

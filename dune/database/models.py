@@ -3,9 +3,9 @@ Postgres Database table definitions
 """
 
 from datetime import datetime, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from sqlalchemy import delete, select, update, ForeignKey
+from sqlalchemy import delete, exists, select, update, ForeignKey
 from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
@@ -34,6 +34,43 @@ class User(SQLAlchemyBaseUserTableUUID, BaseSql):
     oauth_accounts: Mapped[list[OAuthAccount]] = relationship(
         "OAuthAccount", lazy="joined"
     )
+
+
+class UserSessionModel(BaseSql):
+    """User session mapping"""
+
+    __tablename__ = "user_sessions"
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey(User.id, ondelete="CASCADE"), primary_key=True, index=True
+    )
+    session_id: Mapped[UUID] = mapped_column(primary_key=True)
+
+    @classmethod
+    def insert_stmt(cls, user_id: UUID):
+        """Add or update document"""
+        return (
+            insert(cls)
+            .values(
+                user_id=user_id,
+                session_id=uuid4(),
+            )
+            .returning(cls.session_id)
+        )
+
+    @classmethod
+    def get_sessions(cls, user_id: UUID):
+        """Add or update document"""
+        return select_for_user(user_id, cls)
+
+    @classmethod
+    def session_exists(cls, user_id: UUID, session_id: UUID):
+        """Add or update document"""
+        return select_exists_for_user(user_id, cls).where(cls.session_id == session_id)
+
+    @classmethod
+    def delete_session_stmt(cls, user_id: UUID, session_id: UUID):
+        """Add or update document"""
+        return delete_for_user(user_id, cls).where(cls.session_id == session_id)
 
 
 class DocumentModel(BaseSql):
@@ -105,6 +142,11 @@ class DocumentModel(BaseSql):
 
 
 OwnedModel = type[DocumentModel]
+
+
+def select_exists_for_user(user_id: UUID, model: OwnedModel):
+    """select with user"""
+    return select(exists(model)).where(model.user_id == user_id)
 
 
 def select_for_user(user_id: UUID, model: OwnedModel):
