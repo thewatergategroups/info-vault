@@ -6,14 +6,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from langchain_postgres import PGVector, PostgresChatMessageHistory
+from langchain_postgres import PGVector
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from .users import current_active_user
 from ..database.models import User, UserSessionModel
+from ..database.chat_history_wrapper import SQLAlchemyChatMessageHistory
 from .schemas import PostMessage
-from ..settings import get_psycopg_conn, get_async_session, get_settings
+from ..settings import get_async_session
 from .helpers import (
     validate_session,
     stream,
@@ -34,16 +35,18 @@ async def stream_endpoint(
     user: User = Depends(current_active_user),
 ):
     """Stream response from thread"""
-    await validate_session(body.session_id, user, session)
+    session_info: UserSessionModel = await validate_session(
+        body.session_id, user, session
+    )
     fetch_store = get_store_func(body.provider)
-    runnable = await parse_message(body, fetch_store())
+    runnable = await parse_message(body, fetch_store(), session)
     return StreamingResponse(
-        stream(body, runnable),
+        stream(body.message, session_info.id, runnable),
         media_type="text/plain",
     )
 
 
-async def parse_message(body: PostMessage, store: PGVector):
+async def parse_message(body: PostMessage, store: PGVector, session: AsyncSession):
     """parse message"""
     docs: list[Document] = await store.asimilarity_search(body.message, k=10)
     prompt = ChatPromptTemplate.from_messages(
@@ -59,10 +62,9 @@ async def parse_message(body: PostMessage, store: PGVector):
     )
 
     chain = prompt | get_client_func(body.provider)()
-    conn = await get_psycopg_conn()
     return RunnableWithMessageHistory(
         chain,
-        get_message_history_func(conn),
+        get_message_history_func(session),
         input_messages_key="question",
         history_messages_key="history",
     )
@@ -75,16 +77,11 @@ async def get_history(
     user: User = Depends(current_active_user),
 ):
     """Stream response from thread"""
-    await validate_session(session_id, user, session)
-    conn = await get_psycopg_conn()
-    session = PostgresChatMessageHistory(
-        get_settings().db_settings.chat_history_table_name,
-        str(session_id),
-        async_connection=conn,
-    )
+    session_info: UserSessionModel = await validate_session(session_id, user, session)
+    history = SQLAlchemyChatMessageHistory(session_info.id, async_session=session)
     return [
         {"content": item.content, "type": item.type}
-        for item in await session.aget_messages()
+        for item in await history.aget_messages()
     ]
 
 

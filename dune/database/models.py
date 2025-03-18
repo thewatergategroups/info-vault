@@ -5,7 +5,7 @@ Postgres Database table definitions
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, exists, select, update, ForeignKey
+from sqlalchemy import delete, exists, func, select, update, ForeignKey, Index
 from sqlalchemy.orm import Mapped, relationship, DeclarativeBase, mapped_column
 from sqlalchemy.dialects.postgresql import insert, JSONB
 
@@ -40,10 +40,11 @@ class UserSessionModel(BaseSql):
     """User session mapping"""
 
     __tablename__ = "user_sessions"
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey(User.id, ondelete="CASCADE"), primary_key=True, index=True
+        ForeignKey(User.id, ondelete="CASCADE"), index=True
     )
-    session_id: Mapped[UUID] = mapped_column(primary_key=True)
+    session_id: Mapped[UUID]
 
     @classmethod
     def insert_stmt(cls, user_id: UUID):
@@ -63,14 +64,35 @@ class UserSessionModel(BaseSql):
         return select_for_user(user_id, cls)
 
     @classmethod
-    def session_exists(cls, user_id: UUID, session_id: UUID):
+    def get_session(cls, user_id: UUID, session_id: UUID):
         """Add or update document"""
-        return select_exists_for_user(user_id, cls).where(cls.session_id == session_id)
+        return select_for_user(user_id, cls).where(cls.session_id == session_id)
 
     @classmethod
     def delete_session_stmt(cls, user_id: UUID, session_id: UUID):
         """Add or update document"""
         return delete_for_user(user_id, cls).where(cls.session_id == session_id)
+
+
+Index(
+    "user_session_idx",
+    UserSessionModel.user_id,
+    UserSessionModel.session_id,
+    unique=True,
+)
+
+
+class ChatMessageModel(BaseSql):
+    """Chat history model"""
+
+    __tablename__ = "chat_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey(UserSessionModel.id, ondelete="CASCADE"), index=True
+    )
+    message: Mapped[dict] = mapped_column(type_=JSONB)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class DocumentModel(BaseSql):

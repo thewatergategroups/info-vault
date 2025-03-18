@@ -17,7 +17,6 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.document_loaders import S3FileLoader
-from langchain_postgres.chat_message_histories import PostgresChatMessageHistory
 
 
 from botocore.exceptions import ClientError
@@ -198,11 +197,3 @@ def get_sync_session():
     goes out of scope and closes connection at the end of endpoint execution
     """
     return get_sync_sessionmaker(get_settings().db_settings)
-
-
-async def get_psycopg_conn():
-    """get psycopg table"""
-    settings = get_settings().db_settings
-    return await psycopg.AsyncConnection.connect(
-        settings.url.replace("postgresql+psycopg", "postgresql")
-    )

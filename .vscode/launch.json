@@ -9,8 +9,8 @@
           "envFile": "${workspaceFolder}/.env",
           "console": "integratedTerminal",
           "args": ["api"],
-        //   "preLaunchTask": "Setup Environment",
-        //   "postDebugTask": "Teardown Environment"
+        //   "preLaunchTask": "Setup",
+        //   "postDebugTask": "Teardown"
       },
       {
           "name": "Python: Worker Entrypoint",
@@ -20,8 +20,8 @@
           "envFile": "${workspaceFolder}/.env",
           "console": "integratedTerminal",
           "args": ["worker"],
-          "preLaunchTask": "Setup Environment",
-          "postDebugTask": "Teardown Environment"
+          "preLaunchTask": "Setup",
+          "postDebugTask": "Teardown"
       }
   ],
   "compounds": [
