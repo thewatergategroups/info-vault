@@ -4,7 +4,6 @@ Stand-in replacement for the postgres chat message history
 
 import json
 from typing import List, Sequence, Optional
-from uuid import UUID
 
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
@@ -71,7 +70,7 @@ class SQLAlchemyChatMessageHistory(PostgresChatMessageHistory):
             .order_by(self._table_model.id)
         )
         records = query.all()
-        items = [record.message for record in records]
+        items = [json.loads(record.message) for record in records]
         return messages_from_dict(items)
 
     async def aget_messages(self) -> List[BaseMessage]:
@@ -83,7 +82,7 @@ class SQLAlchemyChatMessageHistory(PostgresChatMessageHistory):
         )
         result = await self._async_session.execute(stmt)
         records = result.scalars().all()
-        items = [record.message for record in records]
+        items = [json.loads(record.message) for record in records]
         return messages_from_dict(items)
 
     def clear(self) -> None:
