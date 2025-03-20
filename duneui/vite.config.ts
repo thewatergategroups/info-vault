@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/google": {
+      "/auth": {
         target: "http://localhost:8000", // Change to your backend URL
         changeOrigin: true,
         secure: false,
@@ -16,12 +16,22 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "/ollama": {
+      "/chat": {
         target: "http://localhost:8000", // Change to your backend URL
         changeOrigin: true,
         secure: false,
       },
-      "/gpt": {
+      "/docs": {
+        target: "http://localhost:8000", // Change to your backend URL
+        changeOrigin: true,
+        secure: false,
+      },
+      "/users": {
+        target: "http://localhost:8000", // Change to your backend URL
+        changeOrigin: true,
+        secure: false,
+      },
+      "/openapi.json": {
         target: "http://localhost:8000", // Change to your backend URL
         changeOrigin: true,
         secure: false,

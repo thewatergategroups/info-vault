@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
-  TextField,
   Button,
   Box,
   Typography,
@@ -10,7 +9,8 @@ import {
   Paper,
   useTheme,
 } from "@mui/material";
-import { Send, ExpandMore } from "@mui/icons-material";
+import {  ExpandMore } from "@mui/icons-material";
+import axios from "axios";
 
 interface Message {
   role: "user" | "bot";
@@ -18,15 +18,29 @@ interface Message {
   thinking?: string;
 }
 
+
+
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [session_id, setSessionId] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === "dark";
   const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
-
+ 
+  async function getSession(){
+    const response1 = await axios.get("/chat/sessions", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    setSessionId(response1.data[0].session_id)
+  }
+  
+  useEffect(() => {
+          getSession();
+        }, []);
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -36,10 +50,12 @@ export default function Chat() {
     setLoading(true);
 
     try {
-      const response = await fetch("/ollama/stream", {
+      
+
+      const response = await fetch("/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input, provider: 'ollama',session_id: session_id }),
       });
 
       if (!response.body) throw new Error("No response body");

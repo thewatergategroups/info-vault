@@ -9,10 +9,10 @@ from redis.asyncio import Redis
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..schemas import DocMetadataPayload
-from ..database.models import DocumentModel, User
-from ..settings import get_async_session, get_redis_client, get_os_client, get_settings
-from .users import current_active_user
+from ...schemas import DocMetadataPayload
+from ...database.models import DocumentModel, User
+from ...settings import get_async_session, get_redis_client, get_os_client, get_settings
+from ..users import current_active_user
 
 if TYPE_CHECKING:
     from types_aiobotocore_s3 import S3Client

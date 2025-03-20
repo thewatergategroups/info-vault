@@ -12,7 +12,7 @@ from ..gpt.settings import get_oai_client
 from ..ollama.settings import get_ollama_client
 from ..database.models import User, UserSessionModel
 from ..database.chat_history_wrapper import SQLAlchemyChatMessageHistory
-from .schemas import PostMessage, Provider
+from .schemas import Provider
 
 
 async def validate_session(session_id: UUID, user: User, session: AsyncSession):

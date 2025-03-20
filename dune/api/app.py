@@ -2,10 +2,13 @@
 Create the FastApi application.
 """
 
-from fastapi import FastAPI
+from urllib.parse import quote
 
-from .doc_router import router as docrouter
-from .chat_router import router as chatrouter
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import RedirectResponse
+
+from .routers.docs import router as docrouter
+from .routers.chat import router as chatrouter
 from .users import (
     UserUpdate,
     UserCreate,
@@ -27,6 +30,18 @@ def create_app() -> FastAPI:
         description="Parses Documents",
         version="1.0",
     )
+
+    @app.middleware("http")
+    async def _(request: Request, call_next):
+        """redirect to home page after auth callback"""
+        response: Response = await call_next(request)
+        if "callback" in request.url.path:
+            response.status_code = 302
+            response.headers["location"] = quote(
+                "http://localhost:5173/#/chat", safe=":/%#?=@[]!$&'()*+,;"
+            )
+        return response
+
     routers = [docrouter, chatrouter]
     for router in routers:
         app.include_router(router)

@@ -1,6 +1,8 @@
 import { Button } from "@mui/material";
-import { Google } from "@mui/icons-material"; // Google icon from MUI
-
+import { Google } from "@mui/icons-material";
+import axios from "axios";
+import { useEffect } from "react";
+import { checkUser } from "./helpers";
 declare global {
   interface Window {
     google: any;
@@ -8,9 +10,26 @@ declare global {
 }
 
 export default function LoginForm() {
-  const signInWithGoogle = () => {
-    window.location.href = "/google/login";
+
+  useEffect(() => {
+        checkUser(true);
+      }, []);
+
+  const signInWithGoogle = async () => {
+    // Check if a specific cookie exists
+    // Replace "myCookie" with your actual cookie name
+    try {
+      const { data } = await axios.get("/auth/cookie/google/authorize");
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        console.error("Authorization URL missing in response:", data);
+      }
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+    }
   };
+  
 
   return (
     <Button
