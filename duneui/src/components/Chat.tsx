@@ -1,280 +1,349 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Button,
   Box,
-  Typography,
-  Collapse,
-  IconButton,
-  InputBase,
   Paper,
-  useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  CircularProgress,
+  TextField,
+  SelectChangeEvent,
 } from "@mui/material";
-import {  ExpandMore } from "@mui/icons-material";
 import axios from "axios";
 
-interface Message {
-  role: "user" | "bot";
-  content: string;
-  thinking?: string;
+interface Session {
+  session_id: string;
 }
 
+interface Message {
+  role: "user" | "assistant" | string; // fallback if role is unknown
+  content: string;
+}
 
+interface ChatProps {
+  theme: "light" | "dark";
+}
 
-export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [session_id, setSessionId] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === "dark";
-  const [expanded, setExpanded] = useState<{ [key: number]: boolean }>({});
- 
-  async function getSession(){
-    const response1 = await axios.get("/chat/sessions", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    setSessionId(response1.data[0].session_id)
-  }
-  
+export const ChatPage: React.FC<ChatProps> = ({ theme }) => {
+  // Session state
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>("");
+
+  // Chat history state
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  const [streamingOutput, setStreamingOutput] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+
+  // Loading state for sessions
+  const [sessionsLoading, setSessionsLoading] = useState<boolean>(false);
+
+  // Input message state
+  const [inputMessage, setInputMessage] = useState<string>("");
+
+  // Provider state ("openai" or "ollama")
+  const [selectedProvider, setSelectedProvider] = useState<"openai" | "ollama">(
+    "ollama"
+  );
+
   useEffect(() => {
-          getSession();
-        }, []);
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+    fetchSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const userMessage: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
+  const fetchSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const response = await axios.get<Session[]>("/chat/sessions");
+      setSessions(response.data);
+      if (response.data.length > 0 && !selectedSession) {
+        const firstSession = response.data[0].session_id;
+        setSelectedSession(firstSession);
+        fetchChatHistory(firstSession);
+      }
+    } catch (error) {
+      console.error("Error fetching sessions", error);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const fetchChatHistory = async (session_id: string) => {
+    try {
+      const response = await axios.get<Message[]>("/chat/history", {
+        params: { session_id },
+      });
+      setChatHistory(response.data);
+    } catch (error) {
+      console.error("Error fetching chat history", error);
+    }
+  };
+
+  const handleSessionChange = (e: SelectChangeEvent) => {
+    const sessionId = e.target.value as string;
+    setSelectedSession(sessionId);
+    fetchChatHistory(sessionId);
+  };
+
+  const handleNewSession = async () => {
+    try {
+      const response = await axios.get<{ session_id: string }>("/chat/session");
+      const newSessionId = response.data.session_id;
+      setSelectedSession(newSessionId);
+      fetchSessions(); // refresh sessions list
+      setChatHistory([]); // clear chat history
+    } catch (error) {
+      console.error("Error creating new session", error);
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    if (!selectedSession) return;
+    try {
+      await axios.delete("/chat/session", { params: { session_id: selectedSession } });
+      setChatHistory([]);
+      setSelectedSession("");
+      fetchSessions();
+    } catch (error) {
+      console.error("Error deleting session", error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedSession) return;
+    const userMessage: Message = { role: "user", content: inputMessage };
+    setChatHistory((prev) => [...prev, userMessage]);
+    const messageToSend = inputMessage;
+    setInputMessage("");
+
+    setStreamingOutput("");
+    setIsStreaming(true);
+
+    const payload = {
+      message: messageToSend,
+      session_id: selectedSession,
+      provider: selectedProvider,
+    };
 
     try {
-      
-
       const response = await fetch("/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input, provider: 'ollama',session_id: session_id }),
+        body: JSON.stringify(payload),
       });
-
-      if (!response.body) throw new Error("No response body");
+      if (!response.body) throw new Error("No response body from stream");
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let botMessage = "";
-      let thinkingMessage = "";
-      let isThinking = false;
-
-      setMessages((prev) => [...prev, { role: "bot", content: "", thinking: "" }]);
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-
-        for (let i = 0; i < chunk.length; i++) {
-          if (chunk.substring(i, i + 7) === "<think>") {
-            isThinking = true;
-            i += 6;
-            continue;
-          }
-          if (chunk.substring(i, i + 8) === "</think>") {
-            isThinking = false;
-            i += 7;
-            continue;
-          }
-          if (isThinking) {
-            thinkingMessage += chunk[i];
-          } else {
-            botMessage += chunk[i];
-          }
-        }
-
-        setMessages((prev) =>
-          prev.map((msg, i) =>
-            msg.role === "bot" && i === prev.length - 1
-              ? { ...msg, content: botMessage, thinking: thinkingMessage }
-              : msg
-          )
-        );
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let assistantResponse = "";
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value || new Uint8Array(), { stream: !done });
+        assistantResponse += chunk;
+        setStreamingOutput(assistantResponse);
       }
-
-      setLoading(false);
+      const newAssistantMessage: Message = { role: "assistant", content: assistantResponse };
+      setChatHistory((prev) => [...prev, newAssistantMessage]);
     } catch (error) {
-      console.error("Error streaming chat response:", error);
-      setLoading(false);
+      console.error("Error streaming message", error);
+    } finally {
+      setIsStreaming(false);
+      setStreamingOutput("");
     }
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" && !loading) {
-      event.preventDefault();
-      sendMessage();
-    }
-  };
+  // Override colours based on the theme prop
+  const textColor = theme === "dark" ? "#ffffff" : "#000000";
+  const paperBackground = theme === "dark" ? "#333333" : "#f5f5f5";
+  const dividerColor = theme === "dark" ? "#555" : "#ccc";
 
   return (
     <Box
+      className='chat-input'
       sx={{
-        maxWidth: "48rem",
-        minWidth: "48rem",
-        margin: "auto",
-        padding: 2,
-        height: "90%",
+        width: "100%",
+        height: "620px", // Finite fixed height
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
-        borderRadius: "10px",
+
       }}
     >
-      {/* Message List */}
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          mb: 2,
-          overflowY: "auto",
-          scrollbarWidth: "none",
-          "&::-webkit-scrollbar": { display: "none" },
-        }}
-      >
-        {messages.map((msg, index) => (
-          <Box
-            key={index}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              width: "90%",
-            }}
-          >
-            {/* Thinking Dropdown Above Message with Collapse Button on Top */}
-            {msg.thinking && (
-              <Box
-                sx={{
-                  position: "relative",
-                  width: "103%",
-                }}
-              >
-                {/* Expand/Collapse Button at the Top */}
-                <IconButton
-                  onClick={() => setExpanded((prev) => ({ ...prev, [index]: !prev[index] }))}
-                  size="small"
-                  sx={{
-                    position: "absolute",
-                    left: "96%",
-                    color: theme.palette.text.secondary,
-                    boxShadow: theme.shadows[1],
-                    zIndex: 10,
-                  }}
-                >
-                  <ExpandMore
-                    sx={{
-                      fontSize: "18px",
-                      transform: expanded[index] ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "0.2s",
-                    }}
-                  />
-                </IconButton>
-
-                {/* Thinking Message Box */}
-                <Collapse in={expanded[index]} timeout="auto">
-                  <Box
-                    sx={{
-                      padding: 1,
-                      borderRadius: "6px",
-                      marginBottom: "8px",
-                      backgroundColor: isDarkMode ? theme.palette.grey[700] : theme.palette.grey[300],
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ fontStyle: "italic", color: isDarkMode ? "#fff" : "#000" }}>
-                      {msg.thinking}
-                    </Typography>
-                  </Box>
-                </Collapse>
-              </Box>
-            )}
-
-            {/* Bot Messages: Light Background */}
-            {msg.role === "bot" && (
-              <Box
-                sx={{
-                  width: "100%",
-                  backgroundColor: isDarkMode ? theme.palette.grey[800] : theme.palette.grey[200],
-                  padding: "10px",
-                  borderRadius: "8px",
-                  color: isDarkMode ? "#fff" : "#000",
-                }}
-              >
-                <Typography>{msg.content}</Typography>
-              </Box>
-            )}
-
-            {/* User Messages: Darker Grey Bubble */}
-            {msg.role === "user" && (
-              <Box
-                sx={{
-                  backgroundColor: "#666666",
-                  padding: "10px",
-                  borderRadius: "12px",
-                  maxWidth: "80%",
-                  color: "#fff",
-                }}
-              >
-                <Typography>{msg.content}</Typography>
-              </Box>
-            )}
-          </Box>
-        ))}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      {/* Input Box - Darker in Dark Mode & Themed */}
+      {/* Session Controls */}
       <Paper
         sx={{
+          p: 2,
           display: "flex",
+          flexWrap: "nowrap",
           alignItems: "center",
-          padding: "8px 12px",
-          backgroundColor: isDarkMode ? theme.palette.grey[900] : theme.palette.background.paper,
-          borderRadius: "24px",
-          boxShadow: "none",
-          border: `1px solid ${theme.palette.divider}`,
-          width: "100%",
+          gap: 2,
+          backgroundColor: paperBackground,
+          color: textColor,
         }}
       >
-        <InputBase
-          fullWidth
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Type a message..."
-          sx={{
-            flex: 1,
-            fontSize: "14px",
-            padding: "6px",
-            color: isDarkMode ? "#fff" : "#000",
-          }}
-        />
+        {sessionsLoading ? (
+          <CircularProgress size={24} />
+        ) : (
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="session-select-label" sx={{ color: textColor }}>
+              Session
+            </InputLabel>
+            <Select
+              labelId="session-select-label"
+              value={selectedSession}
+              label="Session"
+              onChange={handleSessionChange}
+              sx={{ color: textColor, borderColor: textColor }}
+            >
+              {sessions.map((session) => (
+                <MenuItem key={session.session_id} value={session.session_id}>
+                  {session.session_id}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        <Button variant="contained" onClick={handleNewSession}>
+          New Session
+        </Button>
         <Button
-          variant="contained"
-          color="primary"
-          onClick={sendMessage}
-          disabled={loading}
+          variant="outlined"
+          onClick={handleDeleteSession}
+          disabled={!selectedSession}
+        >
+          Delete Session
+        </Button>
+
+        {/* Provider Dropdown */}
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel id="provider-select-label" sx={{ color: textColor }}>
+            Provider
+          </InputLabel>
+          <Select
+            labelId="provider-select-label"
+            value={selectedProvider}
+            label="Provider"
+            onChange={(e) =>
+              setSelectedProvider(e.target.value as "openai" | "ollama")
+            }
+            sx={{ color: textColor }}
+          >
+            <MenuItem value="ollama">Ollama</MenuItem>
+            <MenuItem value="openai">OpenAI</MenuItem>
+          </Select>
+        </FormControl>
+      </Paper>
+
+      {/* Chat Area */}
+      <Paper
+        sx={{
+          flexGrow: 1,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          backgroundColor: paperBackground,
+          color: textColor,
+        }}
+      >
+        {/* Chat History Container */}
+        <Box
           sx={{
-            minWidth: "40px",
-            padding: "6px 12px",
-            borderRadius: "20px",
-            fontSize: "12px",
-            textTransform: "none",
+            flexGrow: 1,
+            overflowY: "auto",
+            p: 2,
+            backgroundColor: paperBackground,
+            color: textColor,
           }}
         >
-          Send
-        </Button>
+          {chatHistory.map((msg, idx) => {
+            const isUser = msg.role === "user";
+            return (
+              <Box
+                key={idx}
+                sx={(theme) => ({
+                  alignSelf: isUser ? "flex-end" : "flex-start",
+                  maxWidth: "70%",
+                  mb: 1,
+                  p: 1,
+                  borderRadius: theme.shape.borderRadius,
+                  backgroundColor: isUser
+                    ? theme.palette.primary.main
+                    : theme.palette.secondary.main,
+                  color: isUser
+                    ? theme.palette.getContrastText(theme.palette.primary.main)
+                    : theme.palette.getContrastText(theme.palette.secondary.main),
+                  whiteSpace: "pre-line",
+                })}
+              >
+                {msg.content}
+              </Box>
+            );
+          })}
+          {isStreaming && (
+            <Box
+              sx={(theme) => ({
+                alignSelf: "flex-start",
+                maxWidth: "70%",
+                mb: 1,
+                p: 1,
+                borderRadius: theme.shape.borderRadius,
+                backgroundColor: theme.palette.secondary.main,
+                color: theme.palette.getContrastText(theme.palette.secondary.main),
+                whiteSpace: "pre-line",
+              })}
+            >
+              {streamingOutput}
+            </Box>
+          )}
+        </Box>
+
+        {/* Input Area */}
+        <Box
+          sx={{
+            p: 2,
+            display: "flex",
+            gap: 1,
+            borderTop: `1px solid ${dividerColor}`,
+            backgroundColor: paperBackground,
+            color: textColor,
+          }}
+        >
+          <TextField
+            fullWidth
+            label="Type your message"
+            variant="outlined"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            sx={{
+              "& .MuiInputLabel-root": { color: textColor },
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { borderColor: dividerColor },
+                "&:hover fieldset": { borderColor: dividerColor },
+                "&.Mui-focused fieldset": { borderColor: dividerColor },
+              },
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={handleSendMessage}
+            disabled={isStreaming || !selectedSession}
+          >
+            Send
+          </Button>
+        </Box>
       </Paper>
     </Box>
   );
-}
+};
+
+export default ChatPage;

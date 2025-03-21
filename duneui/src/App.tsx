@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 import LoginForm from './components/LoginForm'
-import Home from './components/Home'
+import DocumentsPage from './components/Documents'
+import Chat from './components/Chat'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header'
 function App() {
@@ -18,9 +19,10 @@ function App() {
       <Header theme={theme} toggleTheme={toggleTheme}/>
       <HashRouter>
         <Routes>
-          <Route path="/home" element={<Home />} />
+          <Route path="/chat" element={<Chat theme={theme} />} />
           <Route path="/login" element={<LoginForm />} />
-          <Route path="*" element={<Navigate to="/home" />} />
+          <Route path="/docs" element={<DocumentsPage  theme={theme}/>} />
+          <Route path="*" element={<Navigate to="/chat" />} />
         </Routes>
       </HashRouter>
     </div>
