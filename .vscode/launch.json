@@ -9,8 +9,8 @@
           "envFile": "${workspaceFolder}/.env",
           "console": "integratedTerminal",
           "args": ["api"],
-        //   "preLaunchTask": "Setup",
-        //   "postDebugTask": "Teardown"
+          "preLaunchTask": "Setup",
+          "postDebugTask": "Teardown"
       },
       {
           "name": "Python: Worker Entrypoint",
