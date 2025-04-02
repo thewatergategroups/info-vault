@@ -21,7 +21,6 @@ app = typer.Typer()
 @app.command()
 def api():
     """API for querying data"""
-
     uvicorn.run(
         "dune.api.app:create_app",
         workers=1,
