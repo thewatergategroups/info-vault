@@ -33,6 +33,7 @@ dependencies = [
     "google-api-python-client>=2.162.0",
     "fastapi-users[sqlalchemy,oauth]>=14.0.1",
     "sqlalchemy>=2.0.38",
+    "pre-commit>=4.2.0",
 ]
 
 [dependency-groups]
