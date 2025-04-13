@@ -43,6 +43,6 @@ services:
     networks:
       - dune_network
     env_file:
-      - .env.template
+      - .env
 networks:
   dune_network: {}

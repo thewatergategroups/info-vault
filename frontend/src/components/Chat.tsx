@@ -12,6 +12,7 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 import axios from "axios";
+import { checkUser } from "../axios";
 
 interface Session {
   session_id: string;

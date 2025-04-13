@@ -2,14 +2,12 @@
 Application Settings
 """
 
-import asyncio
 from contextlib import asynccontextmanager
 import logging
 import os
 import pathlib
 import sys
 from functools import lru_cache
-import psycopg
 import aioboto3
 from pydantic_settings import BaseSettings
 from redis.asyncio import Redis

@@ -2,25 +2,31 @@ import { Button } from "@mui/material";
 import { Google } from "@mui/icons-material";
 import axios from "axios";
 import { useEffect } from "react";
-import { checkUser } from "./helpers";
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+import { checkUser } from "../axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth";
 
 export default function LoginForm() {
+  const {login} = useAuth()
+  const navigate = useNavigate()
+  
+  const handleLoggedInCheck = async () => {
+    const user = await checkUser();
+    if (user !== null) {
+      login(user)
+      navigate("/chat")
+    }
+  }
 
   useEffect(() => {
-        checkUser(true);
+    handleLoggedInCheck()   
       }, []);
 
   const signInWithGoogle = async () => {
-    // Check if a specific cookie exists
-    // Replace "myCookie" with your actual cookie name
     try {
       const { data } = await axios.get("/auth/cookie/google/authorize");
       if (data.authorization_url) {
+        console.log(`navigating to ${data.authorization_url}`)
         window.location.href = data.authorization_url;
       } else {
         console.error("Authorization URL missing in response:", data);
